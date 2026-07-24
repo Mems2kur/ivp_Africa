@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #EDE7F8;   /* background */
+  --primary: #8A38F5;  /* brand purple (sticking with this one) */
+  --ink: #3A2680;       /* text */
+}
+
+/* @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+} */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
