@@ -8,7 +8,7 @@ import { RecentActivity } from "../components/RecentActivity";
 import { ProfileCompletionPanel } from "../components/ProfileCompletionPanel";
 import { RecommendedForYou } from "../components/Recomended";
 import { LatestUpdates } from "../components/updates";
-import { RequireAuth } from "@/app/(auth)/requireAuth";
+import { RequireRole } from "@/app/(auth)/requireAuth";
 import { useSession } from "@/lib/auth/useSession";
 import { useEffect, useState } from "react";
 import { applicationsApi, savedJobsApi } from "@/lib/api/applications";
@@ -85,8 +85,8 @@ const recentApplications = applications.slice(0, 4); // ← simplified, no .map(
 
 export default function Page() {
   return (
-    <RequireAuth>
+    <RequireRole  role="talent">
       <TalentDashboard />
-    </RequireAuth>
+    </RequireRole>
   );
 }
