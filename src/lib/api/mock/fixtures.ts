@@ -6,20 +6,27 @@ import type { Application, Candidate, Employer, Job, SubscriptionPlan } from "@/
 export interface AuthAccount {
   email: string;
   password: string;
-  role: "Talent" | "employer" | "admin";
+  role: "talent" | "employer" | "admin";
   emailVerified: boolean;
   redirectPath: string;
   displayName: string;
 }
-
 export const mockAuthAccounts: AuthAccount[] = [
   {
     email: "amara@example.com",
     password: "Password1!",
-    role: "Talent",
+    role: "talent",
     emailVerified: true,
     redirectPath: "/talent",
     displayName: "Amara Chukwu",
+  },
+  {
+    email: "admin@ivpafrica.com",
+    password: "AdminPass1!",
+    role: "admin",
+    emailVerified: true,
+    redirectPath: "/admin",
+    displayName: "Admin",
   },
 ];
 

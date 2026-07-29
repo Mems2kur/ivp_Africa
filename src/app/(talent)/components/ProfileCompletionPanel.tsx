@@ -1,14 +1,15 @@
-interface ChecklistItem {
-  id: number;
-  label: string;
-  done: boolean;
-}
+"use client";
+
+import { useRouter } from "next/navigation";
+import type { ChecklistItem } from "@/lib/utils/profileCompletion";
 
 export function ProfileCompletionPanel({
   checklist,
 }: {
   checklist: ChecklistItem[];
 }) {
+  const router = useRouter();
+
   return (
     <div className="shadow-[0_4px_12px_rgba(0,0,0,0.08)] rounded-2xl border border-[#EDE7F8] bg-gradient-to-br from-[#F5F3FA] to-[#EDE7F8] p-6">
       <h2 className="text-lg font-bold text-gray-900">Finish your profile</h2>
@@ -39,6 +40,7 @@ export function ProfileCompletionPanel({
 
       <button
         type="button"
+        onClick={() => router.push("/talent/Profile")}
         className="mt-6 w-full rounded-full bg-[#8A38F5] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#7226e0]"
       >
         Complete profile

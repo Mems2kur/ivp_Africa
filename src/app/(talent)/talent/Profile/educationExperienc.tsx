@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import type { EducationInfo, ExperienceInfo } from "@/lib/types/Profile";
 
 interface ToggleProps {
   value: boolean;
@@ -17,9 +17,7 @@ function YesNoToggle({ value, onChange, yesLabel = "Yes", noLabel = "No" }: Togg
         type="button"
         onClick={() => onChange(true)}
         className={`rounded-xl py-3 text-sm font-semibold transition-colors ${
-          value
-            ? "bg-[#8A38F5] text-white"
-            : "border border-gray-200 text-gray-900 hover:bg-gray-50"
+          value ? "bg-[#8A38F5] text-white" : "border border-gray-200 text-gray-900 hover:bg-gray-50"
         }`}
       >
         {yesLabel}
@@ -28,9 +26,7 @@ function YesNoToggle({ value, onChange, yesLabel = "Yes", noLabel = "No" }: Togg
         type="button"
         onClick={() => onChange(false)}
         className={`rounded-xl py-3 text-sm font-semibold transition-colors ${
-          !value
-            ? "bg-[#8A38F5] text-white"
-            : "border border-gray-200 text-gray-900 hover:bg-gray-50"
+          !value ? "bg-[#8A38F5] text-white" : "border border-gray-200 text-gray-900 hover:bg-gray-50"
         }`}
       >
         {noLabel}
@@ -51,12 +47,12 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 const inputStyles =
   "w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-[#8A38F5]";
 
-export function EducationSection() {
-  const [educationLevel, setEducationLevel] = useState("Undergraduate");
-  const [courseOfStudy, setCourseOfStudy] = useState("Computer Science");
-  const [institution, setInstitution] = useState("University of Lagos");
-  const [currentlyInSchool, setCurrentlyInSchool] = useState(true);
+interface EducationSectionProps {
+  value: EducationInfo;
+  onChange: (next: EducationInfo) => void;
+}
 
+export function EducationSection({ value, onChange }: EducationSectionProps) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
       <h2 className="text-lg font-bold text-gray-900">2. Education</h2>
@@ -64,8 +60,8 @@ export function EducationSection() {
       <FormField label="Education level">
         <div className="relative">
           <select
-            value={educationLevel}
-            onChange={(e) => setEducationLevel(e.target.value)}
+            value={value.educationLevel}
+            onChange={(e) => onChange({ ...value, educationLevel: e.target.value })}
             className={`${inputStyles} appearance-none border-[#8A38F5] pr-10`}
           >
             <option>Undergraduate</option>
@@ -83,8 +79,8 @@ export function EducationSection() {
       <FormField label="Course of study">
         <input
           type="text"
-          value={courseOfStudy}
-          onChange={(e) => setCourseOfStudy(e.target.value)}
+          value={value.courseOfStudy}
+          onChange={(e) => onChange({ ...value, courseOfStudy: e.target.value })}
           className={inputStyles}
         />
       </FormField>
@@ -92,38 +88,59 @@ export function EducationSection() {
       <FormField label="Institution name">
         <input
           type="text"
-          value={institution}
-          onChange={(e) => setInstitution(e.target.value)}
+          value={value.institution}
+          onChange={(e) => onChange({ ...value, institution: e.target.value })}
           className={inputStyles}
         />
       </FormField>
 
       <FormField label="Currently in school?">
-        <YesNoToggle value={currentlyInSchool} onChange={setCurrentlyInSchool} />
+        <YesNoToggle
+          value={value.currentlyInSchool}
+          onChange={(v) => onChange({ ...value, currentlyInSchool: v })}
+        />
       </FormField>
     </div>
   );
 }
 
-export function ExperienceSection() {
-  const [hasInternship, setHasInternship] = useState(false);
+interface ExperienceSectionProps {
+  value: ExperienceInfo;
+  onChange: (next: ExperienceInfo) => void;
+}
 
+export function ExperienceSection({ value, onChange }: ExperienceSectionProps) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
       <h2 className="text-lg font-bold text-gray-900">5. Experience</h2>
 
       <FormField label="Have you done an internship before?">
-        <YesNoToggle value={hasInternship} onChange={setHasInternship} />
+        <YesNoToggle
+          value={value.hasInternship}
+          onChange={(v) => onChange({ ...value, hasInternship: v })}
+        />
       </FormField>
     </div>
   );
 }
 
-export function EducationExperienceGrid() {
+interface EducationExperienceGridProps {
+  education: EducationInfo;
+  onEducationChange: (next: EducationInfo) => void;
+  experience: ExperienceInfo;
+  onExperienceChange: (next: ExperienceInfo) => void;
+}
+
+export function EducationExperienceGrid({
+  education,
+  onEducationChange,
+  experience,
+  onExperienceChange,
+}: EducationExperienceGridProps) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <EducationSection />
-      <ExperienceSection />
+      <EducationSection value={education} onChange={onEducationChange} />
+      <ExperienceSection value={experience} onChange={onExperienceChange} />
     </div>
   );
 }

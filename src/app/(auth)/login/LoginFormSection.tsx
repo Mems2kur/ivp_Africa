@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api/client";
+import { session
+
+ } from "@/lib/auth/session";
+ import { profileApi } from "@/lib/api/profile";
 
 interface FormData {
   email: string;
@@ -52,31 +56,39 @@ export default function LoginFormSection() {
     return errors;
   }
 
-  async function handleLogin(e: FormEvent) {
-    e.preventDefault();
-    setResendVisible(false);
-    setResendSent(false);
 
-    const errors = validate();
-    setError(errors);
-    if (Object.keys(errors).length > 0) return;
+async function handleLogin(e: FormEvent) {
+  e.preventDefault();
+  setResendVisible(false);
+  setResendSent(false);
 
-    // setLoading(true);
-    // const result = await api.auth.login(formData.email.trim(), formData.password);
-    // setLoading(false);
+  const errors = validate();
+  setError(errors);
+  if (Object.keys(errors).length > 0) return;
 
-    // if (!result.ok) {
-    //   if (result.reason === "unverified_email") {
-    //     setError({ submit: "Please verify your email address before logging in." });
-    //     setResendVisible(true);
-    //   } else {
-    //     setError({ submit: "Invalid email address or password." });
-    //   }
-    //   return;
-    // }
+  setLoading(true);
+  const result = await api.auth.login(formData.email.trim(), formData.password);
+  setLoading(false);
 
-    router.push("/talent");
+  if (!result.ok) {
+    if (result.reason === "unverified_email") {
+      setError({ submit: "Please verify your email address before logging in." });
+      setResendVisible(true);
+    } else {
+      setError({ submit: "Invalid email address or password." });
+    }
+    return;
   }
+
+  const existingProfile = profileApi.get(result.user.email);
+
+  session.set({
+  ...result.user,
+  redirectPath: result.redirectPath, 
+  avatarUrl: existingProfile?.personalInfo?.avatarUrl,
+});
+  router.push(result.redirectPath);
+}
 
   function handleResend() {
     // TODO: call api.auth.resendVerificationEmail(formData.email) once the endpoint exists.
@@ -84,7 +96,7 @@ export default function LoginFormSection() {
   }
 
   return (
-    <div className="bg-[#EDE7F8] flex w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:ml-[45%] lg:min-h-screen lg:py-12 xl:ml-[50%]">
+    <div className="bg-[#EDE7F8] sm:h-screen flex w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:ml-[45%] lg:min-h-screen lg:py-12 xl:ml-[50%]">
       {/* Floating card */}
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl lg:p-10">
         {/* Heading — centered */}

@@ -23,7 +23,7 @@ const icons: Record<string, React.ElementType> = {
   "/talent": LayoutDashboard,
   "/talent/Profile": User,
   "/talent/applications": FileText,
-  "/talent/saved-jobs": Bookmark,
+  "/talent/jobs": Bookmark,
   "/talent/notifications": Bell,
   "/talent/messages": MessageSquare,
   "/talent/settings": Settings,

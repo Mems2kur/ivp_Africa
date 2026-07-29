@@ -27,15 +27,15 @@ const item: Variants = {
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-hidden lg:flex-row">
-      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[45%] lg:flex-col lg:justify-between xl:w-1/2">
+    <div className="flex w-full flex-col overflow-hidden lg:min-h-screen lg:flex-row">
+      <div className="hidden lg:fixed  lg:inset-y-0 lg:left-0 lg:flex lg:w-[45%] lg:flex-col lg:justify-between xl:w-1/2">
         {/* Background photo */}
         <Image
           src="/img_ivp/auth.png"
           alt="IVP Africa talent celebrating a new opportunity"
           fill
           priority
-          className="object-cover"
+          className="object-cover "
           sizes="50vw"
         />
 
@@ -85,6 +85,7 @@ export default function SignUpPage() {
           </motion.p>
         </motion.div>
       </div>
+
 
       <SignUpFormSection />
     </div>

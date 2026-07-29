@@ -1,33 +1,72 @@
 "use client";
 
-import { useState } from "react";
-import { User, Mail, MapPin, Phone, Calendar } from "lucide-react";
-
-interface PersonalInfo {
-  fullName: string;
-  email: string;
-  location: string;
-  whatsapp: string;
-  age: string;
-}
+import { useRef } from "react";
+import { User, Mail, MapPin, Phone, Calendar, Camera } from "lucide-react";
+import type { PersonalInfo } from "@/lib/types/Profile";
 
 const inputClass =
-  "w-full rounded-xl border border-gray-100 bg-white py-3 pr-4 pl-11 text-sm text-black placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-[#8A38F5]";
+  "w-full rounded-xl border border-gray-100 bg-gray-50 py-3 pr-4 pl-11 text-sm text-black placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-[#8A38F5]";
 const iconClass = "pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#8A38F5]";
 const labelClass = "mb-1.5 block text-xs font-semibold tracking-wider text-gray-500 uppercase";
 
-export function PersonalInfoCard() {
-  const [info, setInfo] = useState<PersonalInfo>({
-    fullName: "",
-    email: "amara@example.com",
-    location: "",
-    whatsapp: "",
-    age: "",
-  });
+interface PersonalInfoCardProps {
+  value: PersonalInfo;
+  onChange: (next: PersonalInfo) => void;
+}
+
+export function PersonalInfoCard({ value, onChange }: PersonalInfoCardProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1_000_000) {
+      alert("Please choose an image under 1MB — larger images can overflow local storage.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onChange({ ...value, avatarUrl: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-[#8A38F5]/5 sm:p-6">
       <h2 className="text-lg font-bold text-black">Personal info</h2>
+
+      <div className="mt-4 flex items-center gap-4">
+        <div className="relative">
+          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-[#EDE7F8] text-lg font-semibold text-[#8A38F5]">
+            {value.avatarUrl ? (
+              <img src={value.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              value.fullName?.[0]?.toUpperCase() ?? <User size={24} />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#8A38F5] text-white shadow-sm"
+            aria-label="Change photo"
+          >
+            <Camera size={12} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-900">Profile photo</p>
+          <p className="text-xs text-gray-400">JPG or PNG, under 1MB</p>
+        </div>
+      </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -37,8 +76,8 @@ export function PersonalInfoCard() {
             <input
               type="text"
               placeholder="Amara Chukwu"
-              value={info.fullName}
-              onChange={(e) => setInfo({ ...info, fullName: e.target.value })}
+              value={value.fullName}
+              onChange={(e) => onChange({ ...value, fullName: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -50,9 +89,10 @@ export function PersonalInfoCard() {
             <Mail className={iconClass} />
             <input
               type="email"
-              value={info.email}
-              disabled
-              className={`${inputClass} cursor-not-allowed bg-gray-50 text-gray-400`}
+              value={value.email}
+              placeholder="example@gmail.com"
+              onChange={(e) => onChange({ ...value, email: e.target.value })}
+              className={`${inputClass} bg-gray-50 text-gray-400`}
             />
           </div>
         </div>
@@ -64,8 +104,8 @@ export function PersonalInfoCard() {
             <input
               type="text"
               placeholder="Lagos, Nigeria"
-              value={info.location}
-              onChange={(e) => setInfo({ ...info, location: e.target.value })}
+              value={value.location}
+              onChange={(e) => onChange({ ...value, location: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -78,8 +118,8 @@ export function PersonalInfoCard() {
             <input
               type="tel"
               placeholder="+234 801 234 5678"
-              value={info.whatsapp}
-              onChange={(e) => setInfo({ ...info, whatsapp: e.target.value })}
+              value={value.whatsapp}
+              onChange={(e) => onChange({ ...value, whatsapp: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -92,20 +132,13 @@ export function PersonalInfoCard() {
             <input
               type="number"
               placeholder="22"
-              value={info.age}
-              onChange={(e) => setInfo({ ...info, age: e.target.value })}
+              value={value.age}
+              onChange={(e) => onChange({ ...value, age: e.target.value })}
               className={inputClass}
             />
           </div>
         </div>
       </div>
-
-      <button
-        type="button"
-        className="mt-5 rounded-full bg-[#8A38F5] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#7226e0]"
-      >
-        Save changes
-      </button>
     </div>
   );
 }

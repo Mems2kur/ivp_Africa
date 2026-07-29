@@ -3,11 +3,14 @@
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, Building2, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { RoleToggle } from "./RoleToggle";
+import { session } from "@/lib/auth/session";
+import { profileApi } from "@/lib/api/profile";
+import Image from "next/image";
 
-interface FormData {
+interface CandidateFormData {
   firstName: string;
   lastName: string;
   email: string;
@@ -16,9 +19,18 @@ interface FormData {
   agreeToTerms: boolean;
 }
 
+interface EmployerFormData {
+  companyName: string;
+  businessEmail: string;
+  password: string;
+  confirmPassword: string;
+  agreeToTerms: boolean;
+}
+
 interface FormErrors {
   firstName?: string;
   lastName?: string;
+  companyName?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -29,7 +41,7 @@ interface FormErrors {
 const EMAIL_RULE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
-const initialFormData: FormData = {
+const initialCandidateData: CandidateFormData = {
   firstName: "",
   lastName: "",
   email: "",
@@ -38,8 +50,16 @@ const initialFormData: FormData = {
   agreeToTerms: false,
 };
 
+const initialEmployerData: EmployerFormData = {
+  companyName: "",
+  businessEmail: "",
+  password: "",
+  confirmPassword: "",
+  agreeToTerms: false,
+};
+
 const inputClass =
-  "w-full rounded-xl border border-gray-100 bg-white py-3.5 pr-4 pl-11 text-sm text-black placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-[#8A38F5]";
+  "w-full rounded-xl border border-gray-100 bg-white py-2.5 sm:py-3 md:py-3.5 pr-4 pl-11 text-sm text-black placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-[#8A38F5]";
 const iconClass = "pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#8A38F5]";
 
 type Step = "form" | "verify";
@@ -48,7 +68,10 @@ export default function SignUpFormSection() {
   const router = useRouter();
   const [role, setRole] = useState<"talent" | "employer">("talent");
   const [step, setStep] = useState<Step>("form");
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+
+  const [candidateData, setCandidateData] = useState<CandidateFormData>(initialCandidateData);
+  const [employerData, setEmployerData] = useState<EmployerFormData>(initialEmployerData);
+
   const [error, setError] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -60,43 +83,58 @@ export default function SignUpFormSection() {
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
-  function validate(): FormErrors {
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingRedirect, setPendingRedirect] = useState("/talent");
+
+  function validateCandidate(): FormErrors {
     const errors: FormErrors = {};
-    if (formData.firstName.trim().length < 2) {
-      errors.firstName = "Enter at least 2 characters.";
-    }
-    if (formData.lastName.trim().length < 2) {
-      errors.lastName = "Enter at least 2 characters.";
-    }
-    if (!formData.email.trim()) {
+    if (candidateData.firstName.trim().length < 2) errors.firstName = "Enter at least 2 characters.";
+    if (candidateData.lastName.trim().length < 2) errors.lastName = "Enter at least 2 characters.";
+    if (!candidateData.email.trim()) {
       errors.email = "Email address is required.";
-    } else if (!EMAIL_RULE.test(formData.email)) {
+    } else if (!EMAIL_RULE.test(candidateData.email)) {
       errors.email = "Enter a valid email address.";
     }
-    if (!PASSWORD_RULE.test(formData.password)) {
+    if (!PASSWORD_RULE.test(candidateData.password)) {
       errors.password = "Min 8 characters, with upper, lower, number, and special character.";
     }
-    if (formData.confirmPassword !== formData.password) {
+    if (candidateData.confirmPassword !== candidateData.password) {
       errors.confirmPassword = "Passwords don't match.";
     }
-    if (!formData.agreeToTerms) {
-      errors.agreeToTerms = "You must accept the Terms and Privacy Policy.";
-    }
+    if (!candidateData.agreeToTerms) errors.agreeToTerms = "You must accept the Terms and Privacy Policy.";
     return errors;
   }
 
-  async function handleSignUp(e: FormEvent) {
+  function validateEmployer(): FormErrors {
+    const errors: FormErrors = {};
+    if (employerData.companyName.trim().length < 2) errors.companyName = "Enter your company name.";
+    if (!employerData.businessEmail.trim()) {
+      errors.email = "Business email is required.";
+    } else if (!EMAIL_RULE.test(employerData.businessEmail)) {
+      errors.email = "Enter a valid email address.";
+    }
+    if (!PASSWORD_RULE.test(employerData.password)) {
+      errors.password = "Min 8 characters, with upper, lower, number, and special character.";
+    }
+    if (employerData.confirmPassword !== employerData.password) {
+      errors.confirmPassword = "Passwords don't match.";
+    }
+    if (!employerData.agreeToTerms) errors.agreeToTerms = "You must accept the Terms and Privacy Policy.";
+    return errors;
+  }
+
+  async function handleCandidateSignUp(e: FormEvent) {
     e.preventDefault();
-    const errors = validate();
+    const errors = validateCandidate();
     setError(errors);
     if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
     const result = await api.auth.registerCandidate({
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
+      firstName: candidateData.firstName.trim(),
+      lastName: candidateData.lastName.trim(),
+      email: candidateData.email.trim(),
+      password: candidateData.password,
     });
     setLoading(false);
 
@@ -105,6 +143,32 @@ export default function SignUpFormSection() {
       return;
     }
 
+    setPendingEmail(candidateData.email.trim());
+    setPendingRedirect("/talent");
+    setStep("verify");
+  }
+
+  async function handleEmployerSignUp(e: FormEvent) {
+    e.preventDefault();
+    const errors = validateEmployer();
+    setError(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setLoading(true);
+    const result = await api.auth.registerEmployer({
+      companyName: employerData.companyName.trim(),
+      businessEmail: employerData.businessEmail.trim(),
+      password: employerData.password,
+    });
+    setLoading(false);
+
+    if (!result.ok) {
+      setError({ submit: "An account already exists with this email address." });
+      return;
+    }
+
+    setPendingEmail(employerData.businessEmail.trim());
+    setPendingRedirect("/employer");
     setStep("verify");
   }
 
@@ -118,7 +182,7 @@ export default function SignUpFormSection() {
     }
 
     setVerifying(true);
-    const result = await api.auth.verifyEmail(formData.email.trim(), otp.trim());
+    const result = await api.auth.verifyEmail(pendingEmail, otp.trim());
     setVerifying(false);
 
     if (!result.ok) {
@@ -126,33 +190,47 @@ export default function SignUpFormSection() {
       return;
     }
 
-    router.push("/talent");
+    const existingProfile = profileApi.get(pendingEmail);
+    const displayName =
+      role === "talent"
+        ? `${candidateData.firstName.trim()} ${candidateData.lastName.trim()}`
+        : employerData.companyName.trim();
+
+    session.set({
+  email: pendingEmail,
+  role,
+  displayName,
+  redirectPath: result.redirectPath || pendingRedirect, 
+  avatarUrl: existingProfile?.personalInfo?.avatarUrl,
+});
+
+    router.push(result.redirectPath || pendingRedirect);
   }
 
   async function handleResend() {
     setResending(true);
     setResendMessage(null);
-    await api.auth.resendOtp(formData.email.trim());
+    await api.auth.resendOtp(pendingEmail);
     setResending(false);
     setResendMessage("A new code has been sent.");
   }
 
-  // ── Step 2: verify email ──
+  // ── Step 2: verify email (shared by both roles) ──
   if (step === "verify") {
     return (
-      <div className="flex bg-[#EDE7F8] w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:ml-[45%] lg:min-h-screen lg:py-12 xl:ml-[50%]">
-        <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl lg:p-10">
-          <h1 className="text-2xl font-bold text-[#3A2680]">Verify your email</h1>
-          <p className="mt-2 text-sm text-[#6b5a94]">
+      <div className="flex w-full flex-col items-center justify-center bg-[#EDE7F8] px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:ml-[45%] lg:min-h-screen lg:py-12 xl:ml-1/2">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-xl sm:max-w-md sm:rounded-3xl sm:p-8 md:p-9 lg:p-10">
+          <h1 className="text-lg font-bold text-[#3A2680] sm:text-xl md:text-2xl">Verify your email</h1>
+          <p className="mt-2 text-xs text-[#6b5a94] sm:text-sm">
             We sent a 6-digit code to{" "}
-            <span className="font-medium text-[#3A2680]">{formData.email}</span>
+            <span className="font-medium text-[#3A2680] break-all">{pendingEmail}</span>
           </p>
 
           <p className="mt-3 rounded-lg bg-[#EDE7F8] px-3 py-2 text-xs text-[#6b5a94]">
             Demo mode: use code <span className="font-mono font-semibold">123456</span>
           </p>
 
-          <form onSubmit={handleVerify} className="mt-6">
+          <form onSubmit={handleVerify} className="mt-5 sm:mt-6">
             <input
               type="text"
               inputMode="numeric"
@@ -160,16 +238,16 @@ export default function SignUpFormSection() {
               placeholder="000000"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="w-full rounded-xl border border-gray-200 py-3.5 text-center text-lg font-semibold tracking-[0.5em] text-black focus:outline-none focus:ring-2 focus:ring-[#8A38F5]"
+              className="w-full rounded-xl border border-gray-200 py-2.5 text-center text-base font-semibold tracking-[0.3em] text-black focus:outline-none focus:ring-2 focus:ring-[#8A38F5] sm:py-3.5 sm:text-lg sm:tracking-[0.5em]"
             />
             {otpError && <p className="mt-2 text-xs text-red-500">{otpError}</p>}
 
             <button
               type="submit"
               disabled={verifying}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#5A31C3] py-3.5 text-base font-semibold text-white
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#5A31C3] py-2.5 text-sm font-semibold text-white
                          transition-all duration-150 hover:bg-[#4a2699] active:scale-[0.98]
-                         disabled:cursor-not-allowed disabled:opacity-50"
+                         disabled:cursor-not-allowed disabled:opacity-50 sm:mt-6 sm:py-3.5 sm:text-base"
             >
               {verifying ? (
                 <>
@@ -182,7 +260,7 @@ export default function SignUpFormSection() {
             </button>
           </form>
 
-          <div className="mt-5 text-sm text-gray-500">
+          <div className="mt-4 text-xs text-gray-500 sm:mt-5 sm:text-sm">
             {resendMessage ? (
               <p className="text-[#3A2680]">{resendMessage}</p>
             ) : (
@@ -206,62 +284,56 @@ export default function SignUpFormSection() {
 
   // ── Step 1: sign-up form ──
   return (
-    <div className="flex bg-[#EDE7F8] w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:ml-[45%] lg:min-h-screen lg:py-12 xl:ml-[50%]">
-      <div className="w-full bg-white max-w-md rounded-3xl  p-8 shadow-xl lg:p-10">
-        <h1 className="text-center text-3xl font-bold text-black">Create Account</h1>
-        <p className="mt-2 text-center text-sm text-black">
+    <div className="flex w-full flex-col h-screen items-center justify-center bg-[#EDE7F8] px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:ml-[45%] md:min-h-screen lg:py-12 xl:ml-1/2">
+      
+      {/* Mobile-only heading, hidden once the desktop branding panel takes over */}
+      <div className="flex flex-col items-center gap-2 bg-[#EDE7F8]  pb-2 mb-3 lg:hidden">
+        <Image
+          src="/img_ivp/Ivp_logo.png"
+          alt="IVP Africa"
+          width={60}
+          height={60}
+          className="h-14 w-auto object-contain"
+          priority
+        />
+        <p className="text-lg font-semibold text-[#3A2680]">IVP Africa</p>
+        <p className="text-xs text-[#6b5a94]">Connecting talent to opportunity</p>
+      </div>
+
+      <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-3xl sm:p-8 md:p-9 lg:p-10">
+        <h1 className="text-center text-xl font-bold text-black sm:text-2xl md:text-3xl">Create Account</h1>
+        <p className="mt-2 text-center text-xs text-black sm:text-sm">
           Join IVP Africa and start applying to jobs and internships
         </p>
 
-        <div className="mt-5">
+        <div className="mt-4 sm:mt-5">
           <RoleToggle value={role} onChange={setRole} />
         </div>
 
         {error.submit && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600 sm:text-sm">
             {error.submit}
           </div>
         )}
 
         {role === "employer" ? (
-          <div className="mt-8 rounded-xl border border-dashed border-gray-200 p-6 text-center">
-            <p className="text-sm font-medium text-[#3A2680]">Employer sign-up is coming soon</p>
-            <p className="mt-1 text-xs text-gray-500">
-              We&apos;re still building this. Check back shortly.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSignUp} autoComplete="off" className=" mt-8 w-full space-y-4">
-            <div className="flex flex-col gap-4">
-              <div>
-                <div className="relative">
-                  <User className={iconClass} />
-                  <input
-                    type="text"
-                    id="firstName"
-                    placeholder="First name"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className={inputClass}
-                  />
-                </div>
-                {error.firstName && <p className="mt-1.5 text-xs text-red-500">{error.firstName}</p>}
+          <form
+            onSubmit={handleEmployerSignUp}
+            autoComplete="off"
+            className="mt-5 w-full space-y-3 sm:mt-8 sm:space-y-4"
+          >
+            <div>
+              <div className="relative">
+                <Building2 className={iconClass} />
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={employerData.companyName}
+                  onChange={(e) => setEmployerData({ ...employerData, companyName: e.target.value })}
+                  className={inputClass}
+                />
               </div>
-
-              <div>
-                <div className="relative">
-                  <User className={iconClass} />
-                  <input
-                    type="text"
-                    id="lastName"
-                    placeholder="Last name"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className={inputClass}
-                  />
-                </div>
-                {error.lastName && <p className="mt-1.5 text-xs text-red-500">{error.lastName}</p>}
-              </div>
+              {error.companyName && <p className="mt-1.5 text-xs text-red-500">{error.companyName}</p>}
             </div>
 
             <div>
@@ -269,10 +341,9 @@ export default function SignUpFormSection() {
                 <Mail className={iconClass} />
                 <input
                   type="email"
-                  id="email"
-                  placeholder="Email address"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Business email"
+                  value={employerData.businessEmail}
+                  onChange={(e) => setEmployerData({ ...employerData, businessEmail: e.target.value })}
                   className={inputClass}
                 />
               </div>
@@ -284,11 +355,10 @@ export default function SignUpFormSection() {
                 <Lock className={iconClass} />
                 <input
                   type={showPassword ? "text" : "password"}
-                  id="password"
                   placeholder="Password"
-                  value={formData.password}
+                  value={employerData.password}
                   autoComplete="new-password"
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => setEmployerData({ ...employerData, password: e.target.value })}
                   className={`${inputClass} pr-11`}
                 />
                 <button
@@ -308,11 +378,10 @@ export default function SignUpFormSection() {
                 <Lock className={iconClass} />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
                   placeholder="Confirm password"
-                  value={formData.confirmPassword}
+                  value={employerData.confirmPassword}
                   autoComplete="new-password"
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onChange={(e) => setEmployerData({ ...employerData, confirmPassword: e.target.value })}
                   className={`${inputClass} pr-11`}
                 />
                 <button
@@ -324,17 +393,15 @@ export default function SignUpFormSection() {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {error.confirmPassword && (
-                <p className="mt-1.5 text-xs text-red-500">{error.confirmPassword}</p>
-              )}
+              {error.confirmPassword && <p className="mt-1.5 text-xs text-red-500">{error.confirmPassword}</p>}
             </div>
 
             <div>
-              <label className="flex items-start gap-2 pt-1 text-xs leading-relaxed text-gray-500">
+              <label className="flex items-start gap-2 pt-1 text-[11px] leading-relaxed text-gray-500 sm:text-xs">
                 <input
                   type="checkbox"
-                  checked={formData.agreeToTerms}
-                  onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+                  checked={employerData.agreeToTerms}
+                  onChange={(e) => setEmployerData({ ...employerData, agreeToTerms: e.target.checked })}
                   className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 text-[#8A38F5] focus:ring-[#8A38F5]/30"
                 />
                 I agree to the{" "}
@@ -352,9 +419,142 @@ export default function SignUpFormSection() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5A31C3] py-3.5 text-base font-semibold text-white
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5A31C3] py-2.5 text-sm font-semibold text-white
                          transition-all duration-150 hover:bg-[#4a2699] active:scale-[0.98]
-                         disabled:cursor-not-allowed disabled:opacity-50"
+                         disabled:cursor-not-allowed disabled:opacity-50 sm:py-3.5 sm:text-base"
+            >
+              {loading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Creating account…
+                </>
+              ) : (
+                "Sign Up"
+              )}
+            </button>
+          </form>
+        ) : (
+          <form
+            onSubmit={handleCandidateSignUp}
+            autoComplete="off"
+            className="mt-5 w-full space-y-3 sm:mt-8 sm:space-y-4"
+          >
+            <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:gap-4">
+              <div>
+                <div className="relative">
+                  <User className={iconClass} />
+                  <input
+                    type="text"
+                    placeholder="First name"
+                    value={candidateData.firstName}
+                    onChange={(e) => setCandidateData({ ...candidateData, firstName: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                {error.firstName && <p className="mt-1.5 text-xs text-red-500">{error.firstName}</p>}
+              </div>
+
+              <div>
+                <div className="relative">
+                  <User className={iconClass} />
+                  <input
+                    type="text"
+                    placeholder="Last name"
+                    value={candidateData.lastName}
+                    onChange={(e) => setCandidateData({ ...candidateData, lastName: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                {error.lastName && <p className="mt-1.5 text-xs text-red-500">{error.lastName}</p>}
+              </div>
+            </div>
+
+            <div>
+              <div className="relative">
+                <Mail className={iconClass} />
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={candidateData.email}
+                  onChange={(e) => setCandidateData({ ...candidateData, email: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              {error.email && <p className="mt-1.5 text-xs text-red-500">{error.email}</p>}
+            </div>
+
+            <div>
+              <div className="relative">
+                <Lock className={iconClass} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={candidateData.password}
+                  autoComplete="new-password"
+                  onChange={(e) => setCandidateData({ ...candidateData, password: e.target.value })}
+                  className={`${inputClass} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {error.password && <p className="mt-1.5 text-xs text-red-500">{error.password}</p>}
+            </div>
+
+            <div>
+              <div className="relative">
+                <Lock className={iconClass} />
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm password"
+                  value={candidateData.confirmPassword}
+                  autoComplete="new-password"
+                  onChange={(e) => setCandidateData({ ...candidateData, confirmPassword: e.target.value })}
+                  className={`${inputClass} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {error.confirmPassword && <p className="mt-1.5 text-xs text-red-500">{error.confirmPassword}</p>}
+            </div>
+
+            <div>
+              <label className="flex items-start gap-2 pt-1 text-[11px] leading-relaxed text-gray-500 sm:text-xs">
+                <input
+                  type="checkbox"
+                  checked={candidateData.agreeToTerms}
+                  onChange={(e) => setCandidateData({ ...candidateData, agreeToTerms: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 text-[#8A38F5] focus:ring-[#8A38F5]/30"
+                />
+                I agree to the{" "}
+                <Link href="/terms" className="font-medium text-[#8A38F5] hover:underline">
+                  Terms & Conditions
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy-policy" className="font-medium text-[#8A38F5] hover:underline">
+                  Privacy Policy
+                </Link>
+              </label>
+              {error.agreeToTerms && <p className="mt-1 text-xs text-red-500">{error.agreeToTerms}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5A31C3] py-2.5 text-sm font-semibold text-white
+                         transition-all duration-150 hover:bg-[#4a2699] active:scale-[0.98]
+                         disabled:cursor-not-allowed disabled:opacity-50 sm:py-3.5 sm:text-base"
             >
               {loading ? (
                 <>
@@ -368,7 +568,7 @@ export default function SignUpFormSection() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-5 text-center text-xs text-gray-500 sm:mt-6 sm:text-sm">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold text-[#8A38F5] hover:underline">
             Log in
