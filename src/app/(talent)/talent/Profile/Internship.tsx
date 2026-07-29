@@ -66,7 +66,7 @@ export function InternshipPreferences({ value, onChange }: InternshipPreferences
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h2 className="text-lg font-bold text-gray-900">3. Internship preferences</h2>
+      <h2 className="text-lg font-bold text-gray-900">Employment preferences</h2>
       <p className="mt-1 text-sm text-gray-500">Select all roles you&apos;d consider.</p>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

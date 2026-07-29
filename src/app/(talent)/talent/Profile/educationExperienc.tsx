@@ -55,7 +55,7 @@ interface EducationSectionProps {
 export function EducationSection({ value, onChange }: EducationSectionProps) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h2 className="text-lg font-bold text-gray-900">2. Education</h2>
+      <h2 className="text-lg font-bold text-gray-900">Education</h2>
 
       <FormField label="Education level">
         <div className="relative">
