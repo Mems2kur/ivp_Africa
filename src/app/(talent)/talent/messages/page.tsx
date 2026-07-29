@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
@@ -11,7 +11,7 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const { session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -94,46 +94,24 @@ export default function MessagesPage() {
           <p className="text-sm text-[#8A38F5]">Re: {activeConversation.role}</p>
         </div>
 
-        {/* Messages */}
         <div className="relative flex-1 overflow-y-auto bg-gray-50">
-          <svg
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <svg className="pointer-events-none absolute inset-0 h-full w-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <pattern
-                id="ivp-chat-doodle"
-                x="0"
-                y="0"
-                width="140"
-                height="140"
-                patternUnits="userSpaceOnUse"
-              >
+              <pattern id="ivp-chat-doodle" x="0" y="0" width="140" height="140" patternUnits="userSpaceOnUse">
                 <path
                   d="M14 18 h30 a8 8 0 0 1 8 8 v16 a8 8 0 0 1 -8 8 h-18 l-8 8 v-8 h-4 a8 8 0 0 1 -8 -8 v-16 a8 8 0 0 1 8 -8 z"
-                  fill="none"
-                  stroke="#8A38F5"
-                  strokeWidth="1.5"
-                  opacity="0.15"
+                  fill="none" stroke="#8A38F5" strokeWidth="1.5" opacity="0.15"
                 />
                 <path
                   d="M80 100 l5 5 l10 -10 M87 100 l5 5 l10 -10"
-                  fill="none"
-                  stroke="#8A38F5"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity="0.15"
+                  fill="none" stroke="#8A38F5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.15"
                 />
                 <circle cx="110" cy="30" r="3" fill="#8A38F5" opacity="0.15" />
                 <circle cx="120" cy="30" r="3" fill="#8A38F5" opacity="0.15" />
                 <circle cx="130" cy="30" r="3" fill="#8A38F5" opacity="0.15" />
                 <path
                   d="M20 90 h20 a6 6 0 0 1 6 6 v10 a6 6 0 0 1 -6 6 h-10 l-6 6 v-6 h-4 a6 6 0 0 1 -6 -6 v-10 a6 6 0 0 1 6 -6 z"
-                  fill="none"
-                  stroke="#8A38F5"
-                  strokeWidth="1.5"
-                  opacity="0.12"
+                  fill="none" stroke="#8A38F5" strokeWidth="1.5" opacity="0.12"
                 />
               </pattern>
             </defs>
@@ -145,21 +123,14 @@ export default function MessagesPage() {
               <p className="text-sm text-gray-400">No messages yet.</p>
             ) : (
               activeConversation.messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
-                >
+                <div key={msg.id} className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`max-w-md rounded-2xl px-5 py-3.5 text-sm shadow-sm ${
                       msg.sender === "me" ? "bg-[#8A38F5] text-white" : "bg-white text-gray-800"
                     }`}
                   >
                     <p>{msg.text}</p>
-                    <p
-                      className={`mt-1 text-[10px] ${
-                        msg.sender === "me" ? "text-white/70" : "text-gray-400"
-                      }`}
-                    >
+                    <p className={`mt-1 text-[10px] ${msg.sender === "me" ? "text-white/70" : "text-gray-400"}`}>
                       {formatTime(msg.sentAt)}
                     </p>
                   </div>
@@ -169,7 +140,6 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* Composer */}
         <div className="flex items-center gap-3 border-t border-gray-100 px-6 py-4">
           <input
             type="text"
@@ -190,5 +160,13 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-gray-400">Loading messages…</div>}>
+      <MessagesContent />
+    </Suspense>
   );
 }
