@@ -51,12 +51,12 @@ export function TopNavbar({ section, title, userName }: TopNavbarProps) {
 
   return (
     <header className="flex items-center justify-between gap-2 border-b border-gray-100 bg-white px-3 py-3 sm:gap-4 sm:px-5 sm:py-4 lg:gap-6 lg:px-8">
-      <div className="hidden shrink-0 sm:block">
+      {/* <div className="hidden shrink-0 sm:block">
         <p className="text-[10px] font-semibold tracking-wide text-[#8A38F5] uppercase sm:text-xs">
           {section}
         </p>
         <h1 className="text-lg font-bold text-gray-900 sm:text-xl lg:text-2xl">{title}</h1>
-      </div>
+      </div> */}
 
       <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-[#F5F3FA] px-3 py-2 sm:px-4 sm:py-2.5 lg:max-w-md">
         <Search size={16} className="shrink-0 text-gray-400 sm:size-[18px]" />
