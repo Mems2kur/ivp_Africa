@@ -50,7 +50,7 @@ export function SkillsAndDocuments({ value, onChange }: SkillsAndDocumentsProps)
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h2 className="text-lg font-bold text-gray-900">4. Skills & documents</h2>
+      <h2 className="text-lg font-bold text-gray-900">Skills & documents</h2>
 
       <div className="mt-5">
         <label className="mb-2 block text-sm font-medium text-gray-900">Top 3 skills</label>

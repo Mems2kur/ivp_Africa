@@ -112,7 +112,7 @@ interface ExperienceSectionProps {
 export function ExperienceSection({ value, onChange }: ExperienceSectionProps) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h2 className="text-lg font-bold text-gray-900">5. Experience</h2>
+      <h2 className="text-lg font-bold text-gray-900">Experience</h2>
 
       <FormField label="Have you done an internship before?">
         <YesNoToggle
