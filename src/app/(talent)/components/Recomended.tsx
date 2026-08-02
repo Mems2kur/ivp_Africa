@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,37 +20,42 @@ export function RecommendedForYou() {
   }, [session?.email]);
 
   return (
-    <div className="shadow-[0_4px_12px_rgba(0,0,0,0.08)]  rounded-2xl border border-gray-100 bg-gray-50 p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="font-serif text-xl text-gray-900">Recommended for you</h2>
+    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 transition-shadow duration-200 hover:shadow-md sm:p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-bold text-gray-900 sm:text-base">Recommended for you</h2>
         <Link
           href="/talent/jobs"
-          className="flex items-center gap-1.5 text-sm font-medium text-[#8A38F5] hover:text-[#6425D0]"
+          className="flex items-center gap-1.5 text-xs font-medium text-[#8A38F5] transition-colors hover:text-[#6C3CFF] sm:text-sm"
         >
-          <Search size={16} />
+          <Search size={14} className="sm:size-4" />
           Search jobs
         </Link>
       </div>
 
       {recommendedJobs.length === 0 ? (
-        <p className="text-sm text-gray-400">No recommendations available right now.</p>
+        <p className="py-6 text-center text-xs text-gray-400 sm:text-sm">
+          No recommendations available right now.
+        </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           {recommendedJobs.map((job) => (
-            <div key={job.id} className="rounded-xl border border-gray-200 bg-white p-5">
-              <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-[#8A38F5]">
-                <Briefcase size={16} />
+            <div
+              key={job.id}
+              className="rounded-xl border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-md sm:p-5"
+            >
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[#8A38F5] sm:mb-3 sm:text-sm">
+                <Briefcase size={14} className="sm:size-4" />
                 {job.type}
               </div>
 
-              <h3 className="mb-1 font-semibold text-gray-900">{job.title}</h3>
-              <p className="mb-4 text-sm text-gray-500">
+              <h3 className="mb-1 text-sm font-semibold text-gray-900 sm:text-base">{job.title}</h3>
+              <p className="mb-3 text-xs text-gray-500 sm:mb-4 sm:text-sm">
                 {job.company} · {job.location}
               </p>
 
               <Link
                 href={`/talent/jobs/${job.id}`}
-                className="text-sm font-medium text-[#8A38F5] hover:text-[#6425D0]"
+                className="text-xs font-medium text-[#8A38F5] transition-colors hover:text-[#6C3CFF] sm:text-sm"
               >
                 View & apply →
               </Link>

@@ -1,5 +1,6 @@
 import type { ApplicationRecord, SavedJobRecord } from "@/lib/types/application";
 import { notificationsApi } from "@/lib/api/notification";
+
 const APPLICATIONS_PREFIX = "ivp_applications_";
 const SAVED_JOBS_PREFIX = "ivp_saved_jobs_";
 

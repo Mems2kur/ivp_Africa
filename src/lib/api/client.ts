@@ -18,58 +18,44 @@ function saveAccounts(accounts: AuthAccount[]) {
 
 export const api = {
   auth: {
-    registerCandidate: async (input: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      password: string;
-    }) => {
-      const accounts = loadAccounts();
-      const exists = accounts.some(
-        (a) => a.email.toLowerCase() === input.email.toLowerCase()
-      );
-      if (exists) {
-        return { ok: false as const, reason: "email_exists" as const };
-      }
+  
+   registerCandidate: async (input: { firstName: string; lastName: string; email: string; password: string }) => {
+  const accounts = loadAccounts();
+  const exists = accounts.some((a) => a.email.toLowerCase() === input.email.toLowerCase());
+  if (exists) return { ok: false as const, reason: "email_exists" as const };
 
-      accounts.push({
-        email: input.email,
-        password: input.password,
-        role: "talent",
-        emailVerified: false,
-        redirectPath: "/talent",
-        displayName: `${input.firstName} ${input.lastName}`,
-      });
+  accounts.push({
+    id: crypto.randomUUID(), // ← new
+    email: input.email,
+    password: input.password,
+    role: "talent",
+    emailVerified: false,
+    redirectPath: "/talent",
+    displayName: `${input.firstName} ${input.lastName}`,
+  });
 
-      saveAccounts(accounts);
-      return { ok: true as const };
-    },
+  saveAccounts(accounts);
+  return { ok: true as const };
+},
 
-    registerEmployer: async (input: {
-      companyName: string;
-      businessEmail: string;
-      password: string;
-    }) => {
-      const accounts = loadAccounts();
-      const exists = accounts.some(
-        (a) => a.email.toLowerCase() === input.businessEmail.toLowerCase()
-      );
-      if (exists) {
-        return { ok: false as const, reason: "email_exists" as const };
-      }
+registerEmployer: async (input: { companyName: string; businessEmail: string; password: string }) => {
+  const accounts = loadAccounts();
+  const exists = accounts.some((a) => a.email.toLowerCase() === input.businessEmail.toLowerCase());
+  if (exists) return { ok: false as const, reason: "email_exists" as const };
 
-      accounts.push({
-        email: input.businessEmail,
-        password: input.password,
-        role: "employer",
-        emailVerified: false,
-        redirectPath: "/employer",
-        displayName: input.companyName,
-      });
+  accounts.push({
+    id: crypto.randomUUID(), // ← new
+    email: input.businessEmail,
+    password: input.password,
+    role: "employer",
+    emailVerified: false,
+    redirectPath: "/employer",
+    displayName: input.companyName,
+  });
 
-      saveAccounts(accounts);
-      return { ok: true as const };
-    },
+  saveAccounts(accounts);
+  return { ok: true as const };
+},
 
     verifyEmail: async (email: string, otp: string) => {
       if (otp !== MOCK_OTP) {

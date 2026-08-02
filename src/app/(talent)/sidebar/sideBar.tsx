@@ -45,14 +45,30 @@ export function Sidebar() {
     <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-gray-100 bg-white lg:w-64">
       {/* Logo */}
       <div className="flex items-center justify-center border-b border-gray-100 px-2 py-3 lg:justify-start lg:px-4">
-        <Image
+        {/* <Image
           alt="IVP Africa"
           width={100}
           height={100}
           className="h-10 w-10 lg:h-16 lg:w-16"
           src="/img_ivp/ivp_logo.png"
-        />
+        /> */}
+        <div className="mt-4 flex items-center justify-center gap-2 px-0 lg:justify-start lg:px-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#8A38F5] text-sm font-bold text-white">
+            IV
+          </div>
+          <span className="hidden text-sm font-bold tracking-wide text-gray-900 lg:inline">
+            IVP AFRICA
+          </span>
+          </div>
       </div>
+       {/* <div className="mb-4 mt-5 flex items-center justify-center gap-2 px-0 lg:justify-start lg:px-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#8A38F5] text-sm font-bold text-white">
+            IV
+          </div>
+          <span className="hidden text-sm font-bold tracking-wide text-gray-900 lg:inline">
+            IVP AFRICA
+          </span>
+        </div> */}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-4 lg:px-3">

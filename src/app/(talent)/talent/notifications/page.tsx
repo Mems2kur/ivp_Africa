@@ -45,13 +45,18 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-black">Notifications</h1>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-black sm:text-2xl">Notifications</h1>
+          <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+            Stay updated on your applications and account activity.
+          </p>
+        </div>
         {hasUnread && (
           <button
             type="button"
             onClick={handleMarkAllRead}
-            className="text-sm font-semibold text-[#8A38F5] hover:underline"
+            className="shrink-0 text-xs font-semibold whitespace-nowrap text-[#8A38F5] hover:underline sm:text-sm"
           >
             Mark all as read
           </button>
@@ -59,8 +64,10 @@ export default function NotificationsPage() {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
-          <p className="text-sm text-gray-500">You&apos;re all caught up — no notifications yet.</p>
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center sm:p-10">
+          <p className="text-xs text-gray-500 sm:text-sm">
+            You&apos;re all caught up — no notifications yet.
+          </p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
@@ -69,18 +76,22 @@ export default function NotificationsPage() {
               key={notification.id}
               type="button"
               onClick={() => handleClick(notification)}
-              className={`flex w-full items-start gap-3 border-b border-gray-100 px-6 py-5 text-left last:border-b-0 transition-colors ${
+              className={`flex w-full items-start gap-2.5 border-b border-gray-100 px-4 py-3.5 text-left last:border-b-0 transition-colors sm:gap-3 sm:px-6 sm:py-5 ${
                 !notification.read ? "bg-gray-50 hover:bg-gray-100" : "hover:bg-gray-50"
               }`}
             >
               <span
-                className={`mt-2 h-2 w-2 shrink-0 rounded-full ${
+                className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full sm:mt-2 sm:h-2 sm:w-2 ${
                   !notification.read ? "bg-[#8A38F5]" : "bg-transparent"
                 }`}
               />
-              <div>
-                <p className="text-sm font-semibold text-gray-900">{notification.message}</p>
-                <p className="mt-1 text-xs text-gray-400">{formatTimeAgo(notification.createdAt)}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-900 sm:text-sm">
+                  {notification.message}
+                </p>
+                <p className="mt-1 text-[11px] text-gray-400 sm:text-xs">
+                  {formatTimeAgo(notification.createdAt)}
+                </p>
               </div>
             </button>
           ))}

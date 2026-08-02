@@ -4,15 +4,19 @@ import type { Application, Candidate, Employer, Job, SubscriptionPlan } from "@/
 // calls once the backend publishes endpoints — nothing else in the app
 // should need to change if the function signatures stay the same.
 export interface AuthAccount {
+  id: string;
   email: string;
   password: string;
   role: "talent" | "employer" | "admin";
   emailVerified: boolean;
   redirectPath: string;
   displayName: string;
+  status?: "active" | "suspended";
 }
+
 export const mockAuthAccounts: AuthAccount[] = [
   {
+    id: "usr_amara",
     email: "amara@example.com",
     password: "Password1!",
     role: "talent",
@@ -20,16 +24,7 @@ export const mockAuthAccounts: AuthAccount[] = [
     redirectPath: "/talent",
     displayName: "Amara Chukwu",
   },
-  {
-    email: "admin@ivpafrica.com",
-    password: "AdminPass1!",
-    role: "admin",
-    emailVerified: true,
-    redirectPath: "/admin",
-    displayName: "Admin",
-  },
 ];
-
 export const mockCandidates: Candidate[] = [
   {
     id: "cand_1",

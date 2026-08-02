@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Building2, Check, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { Building2, Check, X, Search, ChevronDown } from "lucide-react";
 
 interface PendingEmployer {
   id: string;
   company: string;
   industry: string;
   submittedDate: string;
+  submittedAt: number;
   iconBg: string;
   iconColor: string;
 }
@@ -22,39 +24,64 @@ const iconPalette = [
 ];
 
 const rawRequests: Omit<PendingEmployer, "iconBg" | "iconColor">[] = [
-  { id: "1", company: "Vantage Tech", industry: "Tech & Telco", submittedDate: "Jan 15, 2026" },
-  { id: "2", company: "AfriHealth Corp", industry: "Healthcare", submittedDate: "Jan 14, 2026" },
-  { id: "3", company: "Safaricom PLC", industry: "Tech & Telco", submittedDate: "Jan 12, 2026" },
-  { id: "4", company: "Kaziflow Technologies", industry: "Technology", submittedDate: "Jan 11, 2026" },
-  { id: "5", company: "Baobab Microfinance Group", industry: "Finance", submittedDate: "Jan 10, 2026" },
-  { id: "6", company: "Sahara Agritech", industry: "Agriculture", submittedDate: "Jan 9, 2026" },
-  { id: "7", company: "Nile Logistics Co.", industry: "Logistics", submittedDate: "Jan 8, 2026" },
-  { id: "8", company: "Jollof Media House", industry: "Media", submittedDate: "Jan 7, 2026" },
+  { id: "1", company: "Vantage Tech", industry: "Tech & Telco", submittedDate: "Jan 15, 2026", submittedAt: Date.now() - 1 * 86400_000 },
+  { id: "2", company: "AfriHealth Corp", industry: "Healthcare", submittedDate: "Jan 14, 2026", submittedAt: Date.now() - 2 * 86400_000 },
+  { id: "3", company: "Safaricom PLC", industry: "Tech & Telco", submittedDate: "Jan 12, 2026", submittedAt: Date.now() - 4 * 86400_000 },
+  { id: "4", company: "Kaziflow Technologies", industry: "Technology", submittedDate: "Jan 11, 2026", submittedAt: Date.now() - 5 * 86400_000 },
+  { id: "5", company: "Baobab Microfinance Group", industry: "Finance", submittedDate: "Jan 10, 2026", submittedAt: Date.now() - 10 * 86400_000 },
+  { id: "6", company: "Sahara Agritech", industry: "Agriculture", submittedDate: "Jan 9, 2026", submittedAt: Date.now() - 15 * 86400_000 },
+  { id: "7", company: "Nile Logistics Co.", industry: "Logistics", submittedDate: "Jan 8, 2026", submittedAt: Date.now() - 20 * 86400_000 },
+  { id: "8", company: "Jollof Media House", industry: "Media", submittedDate: "Jan 7, 2026", submittedAt: Date.now() - 35 * 86400_000 },
 ];
 
-// cycle through the palette so colors repeat predictably as the list grows
 const initialRequests: PendingEmployer[] = rawRequests.map((req, i) => ({
   ...req,
   ...iconPalette[i % iconPalette.length],
 }));
 
+const dateOptions = ["All time", "Last 7 days", "Last 14 days", "Last 30 days"];
 const PAGE_SIZE = 20;
+
+function daysLimit(option: string): number | null {
+  if (option === "Last 7 days") return 7;
+  if (option === "Last 14 days") return 14;
+  if (option === "Last 30 days") return 30;
+  return null;
+}
 
 export default function EmployerVerificationPage() {
   const [requests, setRequests] = useState<PendingEmployer[]>(initialRequests);
   const [reviewing, setReviewing] = useState<PendingEmployer | null>(null);
+  const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("All time");
   const [page, setPage] = useState(1);
 
-  const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE));
+  const filteredRequests = useMemo(() => {
+    const limit = daysLimit(dateFilter);
+    const cutoff = limit ? Date.now() - limit * 86400_000 : null;
+
+    return requests.filter((req) => {
+      const matchesSearch = search.trim() === "" || req.company.toLowerCase().includes(search.toLowerCase());
+      const matchesDate = cutoff === null || req.submittedAt >= cutoff;
+      return matchesSearch && matchesDate;
+    });
+  }, [requests, search, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
+  const paginatedRequests = filteredRequests.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const startIndex = filteredRequests.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const endIndex = Math.min(currentPage * PAGE_SIZE, filteredRequests.length);
 
-  const paginatedRequests = requests.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
 
-  const startIndex = requests.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const endIndex = Math.min(currentPage * PAGE_SIZE, requests.length);
+  function handleDateChange(value: string) {
+    setDateFilter(value);
+    setPage(1);
+  }
 
   function handleDecision(decision: "approve" | "reject") {
     if (!reviewing) return;
@@ -72,87 +99,120 @@ export default function EmployerVerificationPage() {
         </p>
       </div>
 
+      {/* Filter bar */}
+      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 sm:flex-row">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 sm:max-w-xs">
+          <Search size={16} className="shrink-0 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Search by Company name or email..."
+            className="w-full min-w-0 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
+          />
+        </div>
+
+        <div className="relative">
+          <select
+            value={dateFilter}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="w-full appearance-none rounded-xl border border-gray-200 py-2.5 pr-9 pl-4 text-sm text-gray-700 outline-none sm:w-40"
+          >
+            {dateOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+          <ChevronDown
+            size={16}
+            className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400"
+          />
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6">
         <h2 className="mb-4 text-sm font-bold text-gray-900 sm:text-base">Pending requests</h2>
 
-        {requests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">
-            No pending employer requests right now.
+            No pending employer requests match your search or filter.
           </p>
         ) : (
-         <div className="flex flex-col">
-  <div className="overflow-x-auto">
-    <table className="w-full min-w-[520px] text-left">
-      <thead>
-        <tr className="border-b border-gray-100">
-          <th className="pb-3 text-xs font-medium text-gray-400">Company</th>
-          <th className="hidden pb-3 text-xs font-medium text-gray-400 sm:table-cell">Submitted date</th>
-          <th className="pb-3 text-right text-xs font-medium text-gray-400">Action</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100">
-        {paginatedRequests.map((req) => (
-          <tr key={req.id} className="transition-colors hover:bg-gray-50">
-            <td className="py-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${req.iconBg}`}>
-                  <Building2 size={18} className={req.iconColor} />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-gray-900">{req.company}</p>
-                  <p className="text-xs text-gray-400">{req.industry}</p>
-                  <p className="mt-0.5 text-xs text-gray-400 sm:hidden">{req.submittedDate}</p>
-                </div>
-              </div>
-            </td>
-            <td className="hidden py-4 text-sm text-gray-500 sm:table-cell">{req.submittedDate}</td>
-            <td className="py-4 text-right">
-              <div className="flex items-center justify-end gap-4">
-                <button type="button" className="text-sm font-semibold text-[#8A38F5] hover:underline">
-                  View Profile
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReviewing(req)}
-                  className="rounded-xl bg-[#8A38F5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#7226e0]"
-                >
-                  Review Request
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+          <div className="flex flex-col">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-left">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="pb-3 text-xs font-medium text-gray-400">Company</th>
+                    <th className="hidden pb-3 text-xs font-medium text-gray-400 sm:table-cell">Submitted date</th>
+                    <th className="pb-3 text-right text-xs font-medium text-gray-400">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedRequests.map((req) => (
+                    <tr key={req.id} className="transition-colors hover:bg-gray-50">
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${req.iconBg}`}>
+                            <Building2 size={18} className={req.iconColor} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-gray-900">{req.company}</p>
+                            <p className="text-xs text-gray-400">{req.industry}</p>
+                            <p className="mt-0.5 text-xs text-gray-400 sm:hidden">{req.submittedDate}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="hidden py-4 text-sm text-gray-500 sm:table-cell">{req.submittedDate}</td>
+                      <td className="py-4 text-right">
+                        <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
+                          <Link
+                            href={`/admin/employer-verification/${req.id}`}
+                            className="text-sm font-semibold text-[#8A38F5] hover:underline"
+                          >
+                            View Profile
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setReviewing(req)}
+                            className="rounded-xl bg-[#8A38F5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#7226e0]"
+                          >
+                            Review Request
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-  {/* Pagination */}
-  <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-    <p className="text-xs text-gray-400 sm:text-sm">
-      Showing {startIndex}-{endIndex} of {requests.length} requests
-    </p>
-    {totalPages > 1 && (
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={currentPage === 1}
-          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:border-gray-200 disabled:hover:bg-transparent"
-        >
-          Prev
-        </button>
-        <button
-          type="button"
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={currentPage === totalPages}
-          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:border-gray-200 disabled:hover:bg-transparent"
-        >
-          Next
-        </button>
-      </div>
-    )}
-  </div>
-</div>
+            {/* Pagination */}
+            <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-gray-400 sm:text-sm">
+                Showing {startIndex}-{endIndex} of {filteredRequests.length} requests
+              </p>
+              {totalPages > 1 && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 

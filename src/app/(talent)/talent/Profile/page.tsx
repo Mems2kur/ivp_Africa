@@ -57,7 +57,7 @@ export default function ProfilePage() {
     if (!session?.email) return;
     setSaveError(null);
 
-    const wasNewProfile = !hasProfile; // capture BEFORE we flip it below
+    const wasNewProfile = !hasProfile;
 
     const data: CandidateProfileData = {
       personalInfo,
@@ -90,8 +90,14 @@ export default function ProfilePage() {
     saveStatus === "saved" ? "Saved ✓" : saveStatus === "updated" ? "Updated ✓" : hasProfile ? "Update" : "Save changes";
 
   return (
-    <div className="flex flex-col gap-4 pb-24">
-      <h1 className="text-2xl font-bold text-black">Profile</h1>
+    <div className="flex flex-col gap-4 pb-24 sm:gap-6">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Profile</h1>
+        <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+          Manage your personal info, education, and documents.
+        </p>
+      </div>
+
       <PersonalInfoCard value={personalInfo} onChange={setPersonalInfo} />
       <EducationExperienceGrid
         education={education}
@@ -102,12 +108,16 @@ export default function ProfilePage() {
       <InternshipPreferences value={internshipPreferences} onChange={setInternshipPreferences} />
       <SkillsAndDocuments value={skillsAndDocuments} onChange={setSkillsAndDocuments} />
 
-      <div className="fixed right-8 bottom-6 flex flex-col items-end gap-2">
-        {saveError && <span className="text-sm font-medium text-red-500">{saveError}</span>}
+      <div className="fixed right-4 bottom-4 flex flex-col items-end gap-2 sm:right-8 sm:bottom-6">
+        {saveError && (
+          <span className="max-w-[220px] text-right text-xs font-medium text-red-500 sm:max-w-none sm:text-sm">
+            {saveError}
+          </span>
+        )}
         <button
           type="button"
           onClick={handleSave}
-          className="rounded-full bg-[#8A38F5] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-200 transition-colors hover:bg-[#7226e0]"
+          className="rounded-full bg-[#8A38F5] px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-purple-200 transition-colors hover:bg-[#7226e0] sm:px-6 sm:py-3 sm:text-sm"
         >
           {buttonLabel}
         </button>

@@ -17,34 +17,43 @@ const statusLabels: Record<ApplicationRecord["status"], string> = {
 
 export function RecentActivity({ applications }: { applications: ApplicationRecord[] }) {
   return (
-    <div className="shadow-[0_4px_12px_rgba(0,0,0,0.08)] rounded-2xl border border-gray-100 bg-white p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="font-serif text-xl text-gray-900 font-bold">Recent applications</h2>
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 transition-shadow duration-200 hover:shadow-md sm:p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-bold text-gray-900 sm:text-base">Recent applications</h2>
         <Link
           href="/talent/applications"
-          className="text-sm font-medium text-[#8A38F5] hover:text-[#6425D0]"
+          className="text-xs font-medium text-[#8A38F5] transition-colors hover:text-[#6C3CFF] hover:underline sm:text-sm"
         >
           View all
         </Link>
       </div>
 
-      <div className="divide-y divide-gray-100">
-        {applications.map((app) => (
-          <div key={app.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">{app.jobTitle}</p>
-              <p className="mt-0.5 text-xs text-gray-500">
-                {app.company} · {app.location}
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyles[app.status]}`}
+      {applications.length === 0 ? (
+        <p className="py-6 text-center text-xs text-gray-400 sm:text-sm">
+          No applications yet.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {applications.map((app) => (
+            <div
+              key={app.id}
+              className="flex cursor-pointer items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5 transition-colors duration-150 hover:bg-[#EDE7F8] sm:px-4 sm:py-3"
             >
-              {statusLabels[app.status]}
-            </span>
-          </div>
-        ))}
-      </div>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-gray-900 sm:text-sm">{app.jobTitle}</p>
+                <p className="mt-0.5 truncate text-[11px] text-gray-500 sm:text-xs">
+                  {app.company} · {app.location}
+                </p>
+              </div>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs ${statusStyles[app.status]}`}
+              >
+                {statusLabels[app.status]}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

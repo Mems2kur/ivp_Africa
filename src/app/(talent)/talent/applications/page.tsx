@@ -21,9 +21,6 @@ const statusLabels: Record<ApplicationRecord["status"], string> = {
   rejected: "Rejected",
 };
 
-// Demo data shown ONLY when the logged-in user has no real applications yet —
-// lets the design show all four statuses instead of a blank empty state.
-// Remove once employer/admin actions can generate real status changes.
 const mockApplications: ApplicationRecord[] = [
   {
     id: "mock-1",
@@ -74,7 +71,7 @@ function formatDate(iso: string) {
 function StatusBadge({ status }: { status: ApplicationRecord["status"] }) {
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${statusStyles[status]} ${manrope.className}`}
+      className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs ${statusStyles[status]} ${manrope.className}`}
     >
       {statusLabels[status]}
     </span>
@@ -92,45 +89,50 @@ export default function ApplicationsPage() {
     setChecked(true);
   }, [session?.email]);
 
-  // show real data if any exists; otherwise fall back to demo data so the
-  // page isn't blank while there's no employer/admin flow generating real
-  // status changes yet
   const isUsingMockData = checked && realApplications.length === 0;
   const applications = isUsingMockData ? mockApplications : realApplications;
 
   if (loading || !checked) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className={`text-xl font-bold text-black sm:text-2xl ${manrope.className}`}>
-          Applications
-        </h1>
-        <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center">
-          <p className={`text-sm text-gray-400 ${plusJakartaSans.className}`}>Loading…</p>
+        <div>
+          <h1 className={`text-xl font-bold text-black sm:text-2xl ${manrope.className}`}>
+            Applications
+          </h1>
+          <p className={`mt-1 text-xs text-gray-500 sm:text-sm ${plusJakartaSans.className}`}>
+            Track the status of every job you&apos;ve applied to.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center sm:p-10">
+          <p className={`text-xs text-gray-400 sm:text-sm ${plusJakartaSans.className}`}>Loading…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 sm:px-0">
+    <div className="flex flex-col gap-4">
       <div>
         <h1 className={`text-xl font-bold text-black sm:text-2xl ${manrope.className}`}>
           Applications
         </h1>
-        <p className={`mt-1 text-sm text-gray-500 ${plusJakartaSans.className}`}>
+        <p className={`mt-1 text-xs text-gray-500 sm:text-sm ${plusJakartaSans.className}`}>
+          Track the status of every job you&apos;ve applied to.
+        </p>
+        <p className={`mt-1 text-xs text-gray-400 sm:text-sm ${plusJakartaSans.className}`}>
           {applications.length} application{applications.length !== 1 ? "s" : ""} submitted
           {isUsingMockData && " (demo data)"}
         </p>
       </div>
 
       {applications.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center sm:p-10">
-          <p className={`text-sm text-gray-500 ${plusJakartaSans.className}`}>
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center sm:p-10">
+          <p className={`text-xs text-gray-500 sm:text-sm ${plusJakartaSans.className}`}>
             You haven&apos;t applied to any jobs yet.
           </p>
           <Link
             href="/talent/jobs"
-            className="mt-3 inline-block text-sm font-semibold text-[#8A38F5] hover:underline"
+            className="mt-3 inline-block text-xs font-semibold text-[#8A38F5] hover:underline sm:text-sm"
           >
             Browse jobs
           </Link>
@@ -165,22 +167,22 @@ export default function ApplicationsPage() {
           {/* sm and up: table */}
           <div className="hidden overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,15,20,0.04),0_16px_32px_-24px_rgba(16,15,20,0.12)] sm:block">
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full min-w-[520px] text-left">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className={`px-4 py-4 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:px-6 ${manrope.className}`}>
+                    <th className={`px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:px-6 sm:py-4 ${manrope.className}`}>
                       Job
                     </th>
-                    <th className={`hidden px-4 py-4 text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell sm:px-6 ${manrope.className}`}>
+                    <th className={`hidden px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell sm:px-6 sm:py-4 ${manrope.className}`}>
                       Company
                     </th>
-                    <th className={`hidden px-4 py-4 text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell sm:px-6 ${manrope.className}`}>
+                    <th className={`hidden px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell sm:px-6 sm:py-4 ${manrope.className}`}>
                       Location
                     </th>
-                    <th className={`px-4 py-4 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:px-6 ${manrope.className}`}>
+                    <th className={`px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:px-6 sm:py-4 ${manrope.className}`}>
                       Applied
                     </th>
-                    <th className={`px-4 py-4 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:px-6 ${manrope.className}`}>
+                    <th className={`px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:px-6 sm:py-4 ${manrope.className}`}>
                       Status
                     </th>
                   </tr>
@@ -188,22 +190,22 @@ export default function ApplicationsPage() {
                 <tbody className="divide-y divide-gray-100">
                   {applications.map((app) => (
                     <tr key={app.id}>
-                      <td className={`px-4 py-5 text-sm font-semibold text-gray-900 sm:px-6 ${manrope.className}`}>
+                      <td className={`px-4 py-4 text-xs font-semibold text-gray-900 sm:px-6 sm:py-5 sm:text-sm ${manrope.className}`}>
                         {app.jobTitle}
-                        <p className={`mt-0.5 text-xs font-normal text-gray-400 md:hidden ${plusJakartaSans.className}`}>
+                        <p className={`mt-0.5 text-[11px] font-normal text-gray-400 md:hidden ${plusJakartaSans.className}`}>
                           {app.company}
                         </p>
                       </td>
-                      <td className={`hidden px-4 py-5 text-sm text-gray-500 md:table-cell sm:px-6 ${plusJakartaSans.className}`}>
+                      <td className={`hidden px-4 py-4 text-sm text-gray-500 md:table-cell sm:px-6 sm:py-5 ${plusJakartaSans.className}`}>
                         {app.company}
                       </td>
-                      <td className={`hidden px-4 py-5 text-sm text-gray-500 lg:table-cell sm:px-6 ${plusJakartaSans.className}`}>
+                      <td className={`hidden px-4 py-4 text-sm text-gray-500 lg:table-cell sm:px-6 sm:py-5 ${plusJakartaSans.className}`}>
                         {app.location}
                       </td>
-                      <td className={`px-4 py-5 text-sm whitespace-nowrap text-gray-500 sm:px-6 ${plusJakartaSans.className}`}>
+                      <td className={`px-4 py-4 text-xs whitespace-nowrap text-gray-500 sm:px-6 sm:py-5 sm:text-sm ${plusJakartaSans.className}`}>
                         {formatDate(app.appliedAt)}
                       </td>
-                      <td className="px-4 py-5 sm:px-6">
+                      <td className="px-4 py-4 sm:px-6 sm:py-5">
                         <StatusBadge status={app.status} />
                       </td>
                     </tr>
