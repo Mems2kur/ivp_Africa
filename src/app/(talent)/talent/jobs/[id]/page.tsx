@@ -4,11 +4,21 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check, FileText, AlertCircle, MessageCircle } from "lucide-react";
-import { jobs } from "@/app/(talent)/talent/jobs/job";
+import { adminJobsApi, type AdminJobView } from "@/lib/api/adminJobs";
 import { useSession } from "@/lib/auth/useSession";
 import { applicationsApi, savedJobsApi } from "@/lib/api/applications";
 import { profileApi } from "@/lib/api/profile";
 import { messagesApi } from "@/lib/api/message";
+
+const statusBadgeStyles: Record<"filled" | "flagged", string> = {
+  filled: "bg-gray-100 text-gray-500",
+  flagged: "bg-amber-50 text-amber-700",
+};
+
+const statusBadgeLabels: Record<"filled" | "flagged", string> = {
+  filled: "Filled",
+  flagged: "Flagged",
+};
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -16,11 +26,16 @@ export default function JobDetailPage() {
   const router = useRouter();
 
   const { session } = useSession();
-  const job = jobs.find((j) => j.id === jobId);
+  const [job, setJob] = useState<AdminJobView | null>(null);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [applied, setApplied] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!jobId) return;
+    setJob(adminJobsApi.getById(jobId));
+  }, [jobId]);
 
   useEffect(() => {
     if (!session?.email || !job) return;
@@ -91,13 +106,18 @@ export default function JobDetailPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <span className="rounded-full bg-[#EDE7F8] px-3 py-1 text-xs font-medium text-[#8A38F5]">
               {job.type}
             </span>
             <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
               {job.level}
             </span>
+            {job.status !== "active" && (
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusBadgeStyles[job.status]}`}>
+                {statusBadgeLabels[job.status]}
+              </span>
+            )}
           </div>
 
           <h2 className="mt-6 text-base font-bold text-gray-900">About this role</h2>
@@ -113,7 +133,13 @@ export default function JobDetailPage() {
 
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-gray-100 bg-white p-6">
-            {applied ? (
+            {job.status !== "active" ? (
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-gray-100 py-3 text-center text-sm font-semibold text-gray-500">
+                {job.status === "filled"
+                  ? "This position has been filled"
+                  : "This job has been flagged and is under review"}
+              </div>
+            ) : applied ? (
               <div className="flex items-center justify-center gap-2 rounded-xl bg-green-50 py-3 text-sm font-semibold text-green-700">
                 <Check size={16} />
                 Application submitted
@@ -128,7 +154,7 @@ export default function JobDetailPage() {
               </button>
             )}
 
-            {!applied && (
+            {!applied && job.status === "active" && (
               <button
                 type="button"
                 onClick={handleToggleSave}

@@ -76,12 +76,13 @@ export function AdminTopbar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <button
+         <button
           type="button"
           aria-label="Notifications"
+          onClick={() => router.push("/admin/notifications")}
           className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:bg-[#EDE7F8] hover:text-[#3A2680] sm:h-10 sm:w-10"
         >
-          <Bell size={16} className="sm:size-[18px]" />
+          <Bell size={16} className="shrink-0 sm:size-[18px]" />
         </button>
 
         <button

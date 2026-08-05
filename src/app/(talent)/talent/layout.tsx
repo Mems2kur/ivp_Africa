@@ -33,7 +33,7 @@ export default function TalentLayout({
           userName={session?.displayName ?? "there"}
         />
 
-        <main className={`flex flex-col gap-6 p-4 sm:p-6 lg:p-8 ${plusJakartaSans.className}`}>
+        <main className={`flex flex-col gap-6 p-4 sm:p-6 lg:p-8 `}>
           {children}
         </main>
       </div>

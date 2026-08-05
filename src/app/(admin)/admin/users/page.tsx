@@ -74,7 +74,6 @@ export default function UserManagementPage() {
         </p>
       </div>
 
-      {/* Filter bar */}
       <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 sm:flex-row">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 sm:max-w-xs">
           <Search size={16} className="shrink-0 text-gray-400" />
@@ -98,14 +97,10 @@ export default function UserManagementPage() {
             <option>Employer</option>
             <option>Admin</option>
           </select>
-          <ChevronDown
-            size={16}
-            className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400"
-          />
+          <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400" />
         </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left">

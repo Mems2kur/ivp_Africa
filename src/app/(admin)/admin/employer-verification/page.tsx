@@ -3,7 +3,8 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Building2, Check, X, Search, ChevronDown } from "lucide-react";
-
+import { useSession } from "@/lib/auth/useSession";
+import { auditLogsApi } from "@/lib/api/auditLogs";
 interface PendingEmployer {
   id: string;
   company: string;
@@ -83,12 +84,19 @@ export default function EmployerVerificationPage() {
     setPage(1);
   }
 
-  function handleDecision(decision: "approve" | "reject") {
-    if (!reviewing) return;
-    setRequests((prev) => prev.filter((r) => r.id !== reviewing.id));
-    setReviewing(null);
-    setPage((p) => Math.min(p, Math.max(1, Math.ceil((requests.length - 1) / PAGE_SIZE))));
-  }
+  const { session } = useSession();
+
+function handleDecision(decision: "approve" | "reject") {
+  if (!reviewing) return;
+  auditLogsApi.add(
+    session?.displayName ?? "Admin",
+    decision === "approve" ? "Approved verification" : "Rejected verification",
+    reviewing.company
+  );
+  setRequests((prev) => prev.filter((r) => r.id !== reviewing.id));
+  setReviewing(null);
+  setPage((p) => Math.min(p, Math.max(1, Math.ceil((requests.length - 1) / PAGE_SIZE))));
+}
 
   return (
     <>

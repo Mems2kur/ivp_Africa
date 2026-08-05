@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { jobs, type Job } from "@/app//(talent)/talent/jobs/job";
+import { adminJobsApi, type AdminJobView } from "@/lib/api/adminJobs";
 
-const jobTypes: Job["type"][] = ["Full-time", "Internship", "Part-time", "Contract"];
+const jobTypes: AdminJobView["type"][] = ["Full-time", "Internship", "Part-time", "Contract"];
 
 const categories = [
   "Technology",
@@ -20,6 +21,16 @@ const categories = [
   "Retail",
   "Human Resources",
 ];
+
+const statusBadgeStyles: Record<"filled" | "flagged", string> = {
+  filled: "bg-gray-100 text-gray-500",
+  flagged: "bg-amber-50 text-amber-700",
+};
+
+const statusBadgeLabels: Record<"filled" | "flagged", string> = {
+  filled: "Filled",
+  flagged: "Flagged",
+};
 
 function FilterCheckbox({
   label,
@@ -40,13 +51,7 @@ function FilterCheckbox({
       >
         {checked && (
           <svg width="8" height="8" viewBox="0 0 12 12" fill="none" className="sm:h-3 sm:w-3">
-            <path
-              d="M2 6l3 3 5-6"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M2 6l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
       </span>
@@ -55,21 +60,27 @@ function FilterCheckbox({
   );
 }
 
-export default function JobsPage() {
-  const [query, setQuery] = useState("");
+function JobsContent() {
+  const searchParams = useSearchParams();
+  const [allJobs, setAllJobs] = useState<AdminJobView[]>([]);
+  const [query, setQuery] = useState(searchParams.get("search") ?? "");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const toggle = (
-    value: string,
-    list: string[],
-    setList: (v: string[]) => void
-  ) => {
+  useEffect(() => {
+    setAllJobs(adminJobsApi.getAll());
+  }, []);
+
+  useEffect(() => {
+    setQuery(searchParams.get("search") ?? "");
+  }, [searchParams]);
+
+  const toggle = (value: string, list: string[], setList: (v: string[]) => void) => {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
 
   const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
+    return allJobs.filter((job) => {
       const matchesQuery =
         query.trim() === "" ||
         job.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -78,7 +89,7 @@ export default function JobsPage() {
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(job.category);
       return matchesQuery && matchesType && matchesCategory;
     });
-  }, [query, selectedTypes, selectedCategories]);
+  }, [allJobs, query, selectedTypes, selectedCategories]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,7 +100,6 @@ export default function JobsPage() {
         </p>
       </div>
 
-      {/* Search bar */}
       <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
         <Search size={16} className="shrink-0 text-gray-400 sm:size-[18px]" />
         <input
@@ -102,7 +112,6 @@ export default function JobsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[180px_1fr]">
-        {/* Filters — compact on mobile, two-column checkbox layout to save vertical space */}
         <div className="h-fit rounded-2xl border border-gray-100 bg-white p-3 sm:p-5">
           <h2 className="text-[11px] font-bold text-gray-900 sm:text-sm">Job type</h2>
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:mt-3 sm:flex sm:flex-col sm:gap-2.5">
@@ -129,7 +138,6 @@ export default function JobsPage() {
           </div>
         </div>
 
-        {/* Job list */}
         <div className="flex flex-col gap-2.5 sm:gap-4">
           <p className="text-xs text-gray-400 sm:text-sm">{filteredJobs.length} jobs found</p>
 
@@ -153,9 +161,18 @@ export default function JobsPage() {
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 rounded-full bg-[#EDE7F8] px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-[#8A38F5] sm:px-3 sm:py-1 sm:text-xs">
-                {job.type}
-              </span>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {job.status !== "active" && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap sm:px-3 sm:py-1 sm:text-xs ${statusBadgeStyles[job.status]}`}
+                  >
+                    {statusBadgeLabels[job.status]}
+                  </span>
+                )}
+                <span className="rounded-full bg-[#EDE7F8] px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-[#8A38F5] sm:px-3 sm:py-1 sm:text-xs">
+                  {job.type}
+                </span>
+              </div>
             </Link>
           ))}
 
@@ -167,5 +184,13 @@ export default function JobsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-gray-400">Loading jobs…</div>}>
+      <JobsContent />
+    </Suspense>
   );
 }

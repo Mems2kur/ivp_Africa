@@ -1,26 +1,25 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, ChevronDown, Download } from "lucide-react";
+import { auditLogsApi } from "@/lib/api/auditLogs";
+import type { AuditLogEntry as RealAuditLogEntry } from "@/lib/types/auditLog";
 
-interface AuditLogEntry {
+interface DisplayLogEntry {
   id: string;
   adminName: string;
-  adminAvatarSeed: string;
   action: string;
   target: string;
   timeAgo: string;
-  timestamp: number; // for sorting/filtering
+  timestamp: number;
 }
 
-const mockLogs: AuditLogEntry[] = [
-  { id: "1", adminName: "Zainab Ibrahim", adminAvatarSeed: "ZI", action: "Suspended account", target: "Fatima Yusuf", timeAgo: "2 hrs ago", timestamp: Date.now() - 2 * 3600_000 },
-  { id: "2", adminName: "David Okafor", adminAvatarSeed: "DO", action: "Approved verification", target: "Vantage Tech", timeAgo: "1 day ago", timestamp: Date.now() - 1 * 86400_000 },
-  { id: "3", adminName: "Amara Chukwu", adminAvatarSeed: "AC", action: "Reset password", target: "Kofi Mensah", timeAgo: "2 days ago", timestamp: Date.now() - 2 * 86400_000 },
-  { id: "4", adminName: "Zainab Ibrahim", adminAvatarSeed: "ZI", action: "Rejected verification", target: "AfriHealth Corp", timeAgo: "3 days ago", timestamp: Date.now() - 3 * 86400_000 },
-  { id: "5", adminName: "David Okafor", adminAvatarSeed: "DO", action: "Flagged job posting", target: "Customer Success Lead", timeAgo: "4 days ago", timestamp: Date.now() - 4 * 86400_000 },
-  { id: "6", adminName: "Amara Chukwu", adminAvatarSeed: "AC", action: "Edited page content", target: "About Us", timeAgo: "6 days ago", timestamp: Date.now() - 6 * 86400_000 },
-  { id: "7", adminName: "Zainab Ibrahim", adminAvatarSeed: "ZI", action: "Reactivated account", target: "Chidinma Eze", timeAgo: "8 days ago", timestamp: Date.now() - 8 * 86400_000 },
+const mockLogs: DisplayLogEntry[] = [
+  { id: "1", adminName: "Zainab Ibrahim", action: "Suspended account", target: "Fatima Yusuf", timeAgo: "2 hrs ago", timestamp: Date.now() - 2 * 3600_000 },
+  { id: "2", adminName: "David Okafor", action: "Approved verification", target: "Vantage Tech", timeAgo: "1 day ago", timestamp: Date.now() - 1 * 86400_000 },
+  { id: "3", adminName: "Amara Chukwu", action: "Reset password", target: "Kofi Mensah", timeAgo: "2 days ago", timestamp: Date.now() - 2 * 86400_000 },
+  { id: "4", adminName: "Zainab Ibrahim", action: "Rejected verification", target: "AfriHealth Corp", timeAgo: "3 days ago", timestamp: Date.now() - 3 * 86400_000 },
+  { id: "5", adminName: "David Okafor", action: "Flagged job posting", target: "Customer Success Lead", timeAgo: "4 days ago", timestamp: Date.now() - 4 * 86400_000 },
 ];
 
 const dateRangeOptions = ["Last 7 Days", "Last 30 Days", "Last 90 Days", "All time"];
@@ -34,27 +33,57 @@ function daysAgoLimit(range: string): number | null {
   if (range === "Last 7 Days") return 7;
   if (range === "Last 30 Days") return 30;
   if (range === "Last 90 Days") return 90;
-  return null; // "All time"
+  return null;
 }
 
-function toCsv(rows: AuditLogEntry[]): string {
+function formatTimeAgo(timestamp: number): string {
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? "s" : ""} ago`;
+}
+
+function toCsv(rows: DisplayLogEntry[]): string {
   const header = "Admin,Action,Target,Time\n";
-  const body = rows
-    .map((r) => `"${r.adminName}","${r.action}","${r.target}","${r.timeAgo}"`)
-    .join("\n");
+  const body = rows.map((r) => `"${r.adminName}","${r.action}","${r.target}","${r.timeAgo}"`).join("\n");
   return header + body;
 }
 
 export default function AuditLogsPage() {
+  const [realLogs, setRealLogs] = useState<RealAuditLogEntry[]>([]);
+  const [checked, setChecked] = useState(false);
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState("Last 30 Days");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setRealLogs(auditLogsApi.getAll());
+    setChecked(true);
+  }, []);
+
+  const isUsingMockData = checked && realLogs.length === 0;
+
+  const displayLogs: DisplayLogEntry[] = useMemo(() => {
+    if (isUsingMockData) return mockLogs;
+    return realLogs.map((log) => ({
+      id: log.id,
+      adminName: log.adminName,
+      action: log.action,
+      target: log.target,
+      timeAgo: formatTimeAgo(new Date(log.createdAt).getTime()),
+      timestamp: new Date(log.createdAt).getTime(),
+    }));
+  }, [realLogs, isUsingMockData]);
 
   const filteredLogs = useMemo(() => {
     const limit = daysAgoLimit(dateRange);
     const cutoff = limit ? Date.now() - limit * 86400_000 : null;
 
-    return mockLogs.filter((log) => {
+    return displayLogs.filter((log) => {
       const matchesSearch =
         search.trim() === "" ||
         log.adminName.toLowerCase().includes(search.toLowerCase()) ||
@@ -62,7 +91,7 @@ export default function AuditLogsPage() {
       const matchesDate = cutoff === null || log.timestamp >= cutoff;
       return matchesSearch && matchesDate;
     });
-  }, [search, dateRange]);
+  }, [displayLogs, search, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -97,10 +126,10 @@ export default function AuditLogsPage() {
         <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Audit Logs</h1>
         <p className="mt-1 text-xs text-gray-500 sm:text-sm">
           Search and review every administrative action taken on the platform.
+          {isUsingMockData && " (Showing demo data — no real actions logged yet.)"}
         </p>
       </div>
 
-      {/* Filter bar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row">
           <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 sm:max-w-xs">
@@ -124,10 +153,7 @@ export default function AuditLogsPage() {
                 <option key={option}>{option}</option>
               ))}
             </select>
-            <ChevronDown
-              size={16}
-              className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400"
-            />
+            <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400" />
           </div>
         </div>
 
@@ -142,7 +168,6 @@ export default function AuditLogsPage() {
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left">

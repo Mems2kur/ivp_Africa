@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { adminUsersApi, type AdminUserView } from "@/lib/api/adminUsers";
-
+import { useSession } from "@/lib/auth/useSession";
+import { auditLogsApi } from "@/lib/api/auditLogs";
 const roleLabels: Record<AdminUserView["role"], string> = {
   talent: "Talent",
   employer: "Employer",
@@ -38,13 +39,18 @@ export default function AdminUserProfilePage() {
     refresh();
   }, [id]);
 
-  function handleToggleStatus() {
-    if (!user) return;
-    const nextStatus = user.status === "active" ? "suspended" : "active";
-    adminUsersApi.setStatus(user.id, nextStatus);
-    refresh();
-  }
+  const { session } = useSession();
 
+function handleToggleStatus(user: AdminUserView) {
+  const nextStatus = user.status === "active" ? "suspended" : "active";
+  adminUsersApi.setStatus(user.id, nextStatus);
+  auditLogsApi.add(
+    session?.displayName ?? "Admin",
+    nextStatus === "suspended" ? "Suspended account" : "Reactivated account",
+    user.displayName
+  );
+  refresh();
+}
   if (notFound) {
     return (
       <div>
@@ -111,7 +117,7 @@ export default function AdminUserProfilePage() {
           </p>
           <button
             type="button"
-            onClick={handleToggleStatus}
+            onClick={() => handleToggleStatus(user)}
             className={`mt-4 rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors ${
               user.status === "active"
                 ? "bg-red-50 text-red-600 hover:bg-red-100"
