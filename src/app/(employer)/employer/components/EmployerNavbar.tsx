@@ -1,23 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Bell } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
+import { employerNotificationsApi } from "@/lib/api/employerNotification";
 
 function getInitials(name: string) {
   if (!name?.trim()) return "?";
   return name.trim().split(/\s+/).map((p) => p[0]?.toUpperCase()).slice(0, 2).join("");
 }
 
-interface EmployerTopbarProps {
-  unreadCount?: number;
-}
-
-export function EmployerTopbar({ unreadCount = 0 }: EmployerTopbarProps) {
+export function EmployerTopbar() {
   const { session } = useSession();
   const [query, setQuery] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!session?.email) return;
+    const update = () => setUnreadCount(employerNotificationsApi.unreadCount(session.email));
+    update();
+    const unsubscribe = employerNotificationsApi.subscribe(update);
+    return unsubscribe;
+  }, [session?.email]);
 
   return (
     <header className="flex items-center justify-between gap-2 border-b border-gray-100 bg-white px-2.5 py-2.5 sm:gap-4 sm:px-5 sm:py-4 md:px-6 lg:gap-6 lg:px-8">

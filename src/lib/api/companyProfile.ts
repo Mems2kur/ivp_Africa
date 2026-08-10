@@ -7,6 +7,7 @@ export interface CompanyProfile {
   about: string;
   contactEmail: string;
   officeAddress: string;
+  logoUrl?: string;
 }
 
 
@@ -26,6 +27,7 @@ function defaultProfile(companyName: string, email: string): CompanyProfile {
     about: "",
     contactEmail: email,
     officeAddress: "",
+    logoUrl: undefined,
   };
 }
 

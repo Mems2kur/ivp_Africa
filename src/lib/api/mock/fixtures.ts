@@ -12,8 +12,10 @@ export interface AuthAccount {
   redirectPath: string;
   displayName: string;
   status?: "active" | "suspended";
+  createdAt?: string; 
+  flagged?: boolean;
+  lastLoginAt?: string;
 }
-
 export const mockAuthAccounts: AuthAccount[] = [
   {
     id: "usr_amara",

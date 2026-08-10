@@ -32,6 +32,7 @@ export const api = {
     emailVerified: false,
     redirectPath: "/talent",
     displayName: `${input.firstName} ${input.lastName}`,
+    createdAt: new Date().toISOString(),
   });
 
   saveAccounts(accounts);
@@ -93,6 +94,8 @@ registerEmployer: async (input: { companyName: string; businessEmail: string; pa
       if (!account.emailVerified) {
         return { ok: false as const, reason: "unverified_email" as const };
       }
+        account.lastLoginAt = new Date().toISOString(); // ← new
+        saveAccounts(accounts);
 
       return {
         ok: true as const,

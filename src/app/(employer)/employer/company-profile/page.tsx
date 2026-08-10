@@ -84,7 +84,17 @@ export default function CompanyProfilePage() {
       <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EDE7F8] text-xl font-bold text-[#8A38F5] sm:h-16 sm:w-16 sm:text-2xl">
-            {getInitial(profile.companyName)}
+            {profile.logoUrl ? (
+              <img
+                src={profile.logoUrl}
+                alt={`${profile.companyName} logo`}
+                className="h-14 w-14 rounded-full object-cover sm:h-16 sm:w-16"
+              />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EDE7F8] text-xl font-bold text-[#8A38F5] sm:h-16 sm:w-16 sm:text-2xl">
+                {getInitial(profile.companyName)}
+              </div>
+            )}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

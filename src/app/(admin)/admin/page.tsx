@@ -2,34 +2,90 @@
 
 import { ShieldCheck, Briefcase, ClipboardList, ClipboardCheck } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
+import {adminUsersApi, AdminUserView} from "@/lib/api/adminUsers";
+import { employerJobsApi } from "@/lib/api/employerJob";
+import { applicationsApi } from "@/lib/api/applications";
+import type { ApplicationRecord } from "@/lib/types/application";
+import { useEffect, useState } from "react";
 
-const stats = [
-  { icon: ShieldCheck, label: "Registered candidates", value: "8,204", filled: true },
-  { icon: Briefcase, label: "Job applications", value: "24,910" },
-  { icon: ClipboardList, label: "Active job postings", value: "312" },
-  { icon: ClipboardCheck, label: "Pending verifications", value: "17" },
-];
-
-const recentApplications = [
-  { id: 1, title: "Senior Product Designer", company: "AfriHealth", location: "Lagos, Nigeria", status: "Completed" as const },
-  { id: 2, title: "Backend Engineer (Node.js)", company: "Kippa", location: "Accra, Ghana", status: "Completed" as const },
-  { id: 3, title: "Clinical Officer", company: "Safiricom Health", location: "Nairobi", status: "Applied" as const },
-  { id: 4, title: "Data Analyst", company: "Vantage Tech", location: "Cape Town", status: "Applied" as const },
-];
-
-const statusStyles: Record<"Completed" | "Applied", string> = {
-  Completed: "bg-green-50 text-green-700",
-  Applied: "bg-amber-50 text-amber-700",
-};
-
-const latestUpdates = [
-  { id: 1, dot: "bg-green-500", text: "Recruiter 'AfriHealth' subscribed to Pro.", time: "10 mins ago" },
-  { id: 2, dot: "bg-red-500", text: "Audit Alert: Configuration settings modified.", time: "1 hour ago" },
-  { id: 3, dot: "bg-amber-500", text: "Candidate 'Ella ThankGod' completed profile verification.", time: "2 hours ago" },
-];
+import { auditLogsApi } from "@/lib/api/auditLogs";
+import type { AuditLogEntry } from "@/lib/types/auditLog";
 
 export default function AdminDashboardPage() {
   const { session } = useSession();
+ 
+  const [candidateCount, setCandidateCount] = useState(0);
+  const [activeJobCount, setActiveJobCount] = useState(0);
+  const [totalApplications, setTotalApplications] = useState(0);
+  const [recentUsers, setRecentUsers] = useState<AdminUserView[]>([]);
+  const [recentApplications, setRecentApplications] = useState<ApplicationRecord[]>([]);
+  const [latestUpdates, setLatestUpdates] = useState<AuditLogEntry[]>([]);
+   const stats = [
+    { icon: ShieldCheck, label: "Registered candidates", value: candidateCount, filled: true },
+    { icon: Briefcase, label: "Job applications", value: totalApplications, filled: false },
+    { icon: ClipboardList, label: "Active job postings", value: activeJobCount, filled: false },
+    { icon: ClipboardCheck, label: "Pending verifications", value: "—", filled: false }, // honest gap, see below
+  ];
+
+
+const statusStyles: Record<ApplicationRecord["status"], string> = {
+  applied: "bg-gray-100 text-gray-500",
+  shortlisted: "bg-[#EDE7F8] text-[#8A38F5]",
+  interview: "bg-blue-50 text-blue-700",
+  rejected: "bg-red-50 text-red-600",
+};
+
+
+ useEffect(() => {
+  const allUsers = adminUsersApi.getAll();
+    const candidates = allUsers.filter((u) => u.role === "talent");
+    const employers = allUsers.filter((u) => u.role === "employer");
+
+    setCandidateCount(candidates.length);
+    let jobs = 0;
+    employers.forEach((emp) => {
+      jobs += employerJobsApi.getAll(emp.email).filter((j) => j.status === "active").length;
+    });
+    setActiveJobCount(jobs);
+
+    let applications = 0;
+    candidates.forEach((c) => {
+      applications += applicationsApi.getAll(c.email).length;
+    });
+    setTotalApplications(applications);
+
+    const allApplications: ApplicationRecord[] = [];
+candidates.forEach((c) => {
+  allApplications.push(...applicationsApi.getAll(c.email));
+});
+allApplications.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+setRecentApplications(allApplications.slice(0, 4));
+
+setLatestUpdates(auditLogsApi.getAll().slice(0, 3));
+
+    setRecentUsers(
+      [...allUsers]
+        .filter((u) => u.createdAt)
+        .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+        .slice(0, 5)
+    );
+
+ },[]);
+function dotColorFor(action: string) {
+  if (action.toLowerCase().includes("suspend")) return "bg-red-500";
+  if (action.toLowerCase().includes("approv") || action.toLowerCase().includes("reactivat")) return "bg-green-500";
+  if (action.toLowerCase().includes("flag") || action.toLowerCase().includes("reject")) return "bg-amber-500";
+  return "bg-[#8A38F5]";
+}
+
+function formatTimeAgo(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diffMs / 3600_000);
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? "s" : ""} ago`;
+}
 
   return (
     <>
@@ -91,24 +147,19 @@ export default function AdminDashboardPage() {
             </button>
           </div>
           <div className="flex flex-col gap-2">
-            {recentApplications.map((app) => (
-              <div
-                key={app.id}
-                className="flex cursor-pointer items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5 transition-colors duration-150 hover:bg-[#EDE7F8] sm:px-4 sm:py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-gray-900 sm:text-sm">{app.title}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-gray-500 sm:text-xs">
-                    {app.company} · {app.location}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs ${statusStyles[app.status]}`}
-                >
-                  {app.status}
-                </span>
+          {recentApplications.map((app) => (
+            <div key={app.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 transition-colors hover:bg-[#EDE7F8]">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{app.jobTitle}</p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {app.company} · {app.location}
+                </p>
               </div>
-            ))}
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyles[app.status] ?? "bg-gray-100 text-gray-500"}`}>
+                {app.status}
+              </span>
+            </div>
+          ))}
           </div>
         </div>
 
@@ -165,19 +216,18 @@ export default function AdminDashboardPage() {
       <div className="rounded-2xl border border-gray-100 bg-white p-4 transition-shadow duration-200 hover:shadow-md sm:p-6">
         <h2 className="mb-4 text-sm font-bold text-gray-900 sm:text-base">Latest updates</h2>
         <div className="flex flex-col gap-3">
-          {latestUpdates.map((update) => (
-            <div
-              key={update.id}
-              className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors duration-150 hover:bg-gray-50"
-            >
-              <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${update.dot}`} />
-                <p className="truncate text-xs text-gray-700 sm:text-sm">{update.text}</p>
-              </div>
-              <span className="shrink-0 text-[11px] text-gray-400 sm:text-xs">{update.time}</span>
-            </div>
-          ))}
+        {latestUpdates.map((update) => (
+        <div key={update.id} className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${dotColorFor(update.action)}`} />
+            <p className="text-sm text-gray-700">
+              {update.adminName} — {update.action}: {update.target}
+            </p>
+          </div>
+          <span className="shrink-0 text-xs text-gray-400">{formatTimeAgo(update.createdAt)}</span>
         </div>
+      ))}
+    </div>
       </div>
     </>
   );

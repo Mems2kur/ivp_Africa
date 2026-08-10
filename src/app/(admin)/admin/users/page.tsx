@@ -38,8 +38,10 @@ export default function UserManagementPage() {
     setUsers(adminUsersApi.getAll());
   }, []);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
+ const filteredUsers = useMemo(() => {
+  return users
+    .filter((user) => user.role !== "admin") // exclude admin accounts from this list entirely
+    .filter((user) => {
       const matchesSearch =
         search.trim() === "" ||
         user.displayName.toLowerCase().includes(search.toLowerCase()) ||
@@ -47,8 +49,7 @@ export default function UserManagementPage() {
       const matchesType = typeFilter === "All types" || roleLabels[user.role] === typeFilter;
       return matchesSearch && matchesType;
     });
-  }, [users, search, typeFilter]);
-
+}, [users, search, typeFilter]);
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -95,7 +96,6 @@ export default function UserManagementPage() {
             <option>All types</option>
             <option>Talent</option>
             <option>Employer</option>
-            <option>Admin</option>
           </select>
           <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400" />
         </div>
@@ -118,8 +118,12 @@ export default function UserManagementPage() {
                 <tr key={user.email} className="transition-colors hover:bg-gray-50">
                   <td className="px-4 py-4 sm:px-6">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDE7F8] text-xs font-semibold text-[#8A38F5]">
-                        {getInitials(user.displayName)}
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EDE7F8] text-xs font-semibold text-[#8A38F5]">
+                        {user.avatarUrl ? (
+                          <img src={user.avatarUrl} alt={user.displayName} className="h-full w-full object-cover" />
+                        ) : (
+                          getInitials(user.displayName)
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-gray-900">{user.displayName}</p>

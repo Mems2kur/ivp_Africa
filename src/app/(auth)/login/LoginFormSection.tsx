@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api/client";
-import { session
-
- } from "@/lib/auth/session";
+import { session } from "@/lib/auth/session";
  import { profileApi } from "@/lib/api/profile";
 
 interface FormData {

@@ -14,7 +14,7 @@ export function useSession() {
   const unsubscribe = session.subscribe(setData);
   return () => {
     unsubscribe();
-  };
+      };
 }, []);
 
   return { session: data, loading };
