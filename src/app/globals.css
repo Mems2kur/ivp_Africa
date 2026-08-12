@@ -1,18 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&display=swap');
+
+/* 1. Required for Tailwind v4 */
 @import "tailwindcss";
+@config "../../tailwind.config.js"; 
 
 :root {
-  --canvas: #EDE7F8;   /* background */
-  --primary: #8A38F5;  /* brand purple (sticking with this one) */
-  --ink: #3A2680;       /* text */
+  --canvas: #EDE7F8;
+  --primary: #8A38F5;
+  --ink: #3A2680;
+  --background: #ffffff;
+  --foreground: #000000;
 }
-
-/* @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
-} */
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -24,4 +22,43 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  @apply font-sans px-4;
+}
+
+/* 2. Standard CSS media queries replace inline responsive variants */
+@media (min-width: 640px) {
+  body {
+    @apply px-6;
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    @apply px-0;
+  }
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+/* 3. Components layer is strictly separated from the base layer */
+@layer components {
+  .section-container {
+    @apply w-full max-w-7xl mx-auto px-4;
+  }
+  
+  @media (min-width: 640px) {
+    .section-container {
+      @apply px-6;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .section-container {
+      @apply px-0;
+    }
+  }
 }

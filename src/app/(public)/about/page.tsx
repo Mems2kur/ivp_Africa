@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
+import AboutPage from '@/pages/AboutPage';
+
+export const metadata: Metadata = {
+  title: 'About | Internship Vault Program Africa',
+  description: 'Learn more about our mission, vision, and values.',
+  alternates: {
+    canonical: '/about',
+  },
+};
+
 export default function Page() {
-  return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <h1 className="text-2xl font-semibold capitalize">about</h1>
-      <p className="mt-2 text-sm text-neutral-500">
-        Placeholder route — build pending design handoff.
-      </p>
-    </main>
-  );
+  return <AboutPage />;
 }
