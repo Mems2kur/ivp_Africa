@@ -25,3 +25,165 @@ next-env.d.ts
 # editor/OS files
 .DS_Store
 *.pem
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+.pnp/
+.pnp.js
+
+# ===========================
+# Build outputs
+# ===========================
+dist/
+dist-ssr/
+build/
+*.local
+
+# ===========================
+# Vite
+# ===========================
+.vite/
+*.local
+
+# ===========================
+# Environment variables
+# ===========================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# Keep example env file
+!.env.example
+
+# ===========================
+# Editor & IDE
+# ===========================
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.history/
+
+# JetBrains (WebStorm, IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ===========================
+# OS generated files
+# ===========================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===========================
+# Testing
+# ===========================
+coverage/
+.nyc_output/
+*.lcov
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ===========================
+# Cache
+# ===========================
+.cache/
+.parcel-cache/
+.npm/
+.eslintcache
+.stylelintcache
+*.cache
+
+# ===========================
+# Misc
+# ===========================
+*.pem
+*.key
+*.cert
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ===========================
+# Debug
+# ===========================
+.debug/
+debug.log
+
+# ===========================
+# Vercel
+# ===========================
+.vercel/
+
+# ===========================
+# Optional: Large media files
+# (uncomment if you want to ignore large files)
+# ===========================
+# *.mp4
+# *.mov
+# *.avi
+# *.mkv
+# *.mp3
+# *.wav
+# *.psd
+# *.ai

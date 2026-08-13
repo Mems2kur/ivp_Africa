@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
+import SearchJobsPage from '@/pages/SearchjobsPage';
+
+export const metadata: Metadata = {
+  title: 'Jobs | Internship Vault Program Africa',
+  description: 'Browse our latest internship opportunities and find the perfect fit for your career.',
+  alternates: {
+    canonical: '/jobs',
+  },
+};
+
 export default function Page() {
-  return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <h1 className="text-2xl font-semibold capitalize">jobs</h1>
-      <p className="mt-2 text-sm text-neutral-500">
-        Placeholder route — build pending design handoff.
-      </p>
-    </main>
-  );
+  return <SearchJobsPage />;
 }
