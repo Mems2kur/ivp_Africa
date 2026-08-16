@@ -1,6 +1,6 @@
 "use client";
 
-import NavBar from "@/components/layout/Navbar";
+import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {

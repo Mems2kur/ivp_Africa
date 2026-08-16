@@ -44,9 +44,11 @@ function FilterCheckbox({ label, checked, onChange }: { label: string; checked: 
 }
 
 function JobsContent() {
-  const searchParams = useSearchParams();
+ 
   const [allJobs, setAllJobs] = useState<TalentJob[]>([]);
-  const [query, setQuery] = useState(searchParams.get("search") ?? "");
+ const searchParams = useSearchParams();
+const searchQuery = searchParams?.get("search") ?? "";
+const [query, setQuery] = useState(searchQuery);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -55,7 +57,7 @@ function JobsContent() {
   }, []);
 
   useEffect(() => {
-    setQuery(searchParams.get("search") ?? "");
+    setQuery(searchParams?.get("search") ?? "");
   }, [searchParams]);
 
   const toggle = (value: string, list: string[], setList: (v: string[]) => void) => {

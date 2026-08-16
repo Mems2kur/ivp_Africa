@@ -20,8 +20,8 @@ const statusBadgeLabels: Record<"filled" | "flagged", string> = {
 };
 
 export default function JobDetailPage() {
-  const params = useParams();
-  const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const params = useParams<{ id: string }>();
+const jobId = params?.id;
   const router = useRouter();
 
   const { session } = useSession();
