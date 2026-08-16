@@ -1,10 +1,14 @@
+import type { Metadata } from 'next';
+import ContactPage from '@/pages/ContactPage';
+
+export const metadata: Metadata = {
+  title: 'Contact | Get in Touch',
+  description: 'Get in touch with us for any inquiries or service requests.',
+  alternates: {
+    canonical: '/contact',
+  },
+};
+
 export default function Page() {
-  return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <h1 className="text-2xl font-semibold capitalize">contact</h1>
-      <p className="mt-2 text-sm text-neutral-500">
-        Placeholder route — build pending design handoff.
-      </p>
-    </main>
-  );
+  return <ContactPage />;
 }
