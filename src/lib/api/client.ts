@@ -1,6 +1,69 @@
 import { MOCK_OTP, mockAuthAccounts, type AuthAccount } from "@/lib/api/mock/fixtures";
-
+import { apiFetch } from "./httpClient";
 const STORAGE_KEY = "ivp_mock_accounts";
+
+
+export const realAuthApi = {
+  registerCandidate: async (input: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    return apiFetch<{ message: string; userId: string }>("/api/v1/auth/register/talent", {
+      method: "POST",
+      body: JSON.stringify({ ...input, acceptTerms: true }),
+    });
+  },
+  login: async (email: string, password: string) => {
+  const result = await apiFetch<{
+    access_token: string;
+    user: { id: string; email: string; role: string };
+  }>("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!result.ok) {
+    return { ok: false as const, message: result.message };
+  }
+
+  const role = result.data.user.role.toLowerCase(); // backend sends "TALENT"/"EMPLOYER", app expects lowercase
+  const redirectPath = role === "employer" ? "/employer" : role === "admin" ? "/admin" : "/talent";
+
+  return {
+    ok: true as const,
+    accessToken: result.data.access_token,
+    user: { id: result.data.user.id, email: result.data.user.email, role },
+    redirectPath,
+  };
+  },
+  requestPasswordReset: async(email:string) =>{
+    const result = await apiFetch<{message: string}>("/api/v1/auth/password-reset/request",{
+      method:"POST",
+      body: JSON.stringify({email})
+    });
+  
+    if(!result.ok){
+      return {ok:false as const, message: result.message};
+    }
+    return {ok:true as const, message: result.data.message};
+
+  },
+  
+  confirmPasswordReset: async(token : string, newPassword: string) =>{
+    const result = await apiFetch<{message: string}>("/api/v1/auth/password-reset/confirm",{
+      method:"POST",
+      body: JSON.stringify({token, newPassword})
+    });
+  
+    if(!result.ok){
+      return {ok:false as const, message: result.message};
+    }
+    return {ok:true as const, message: result.data.message};
+  },
+};
 
 function loadAccounts(): AuthAccount[] {
   if (typeof window === "undefined") return mockAuthAccounts;
@@ -81,6 +144,7 @@ registerEmployer: async (input: { companyName: string; businessEmail: string; pa
       console.log(`[mock] resent OTP ${MOCK_OTP} to ${email}`);
       return { ok: true as const };
     },
+
 
     login: async (email: string, password: string) => {
       const accounts = loadAccounts();

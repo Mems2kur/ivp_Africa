@@ -1,13 +1,21 @@
 "use client";
 
 import { useRef } from "react";
-import { User, Mail, MapPin, Phone, Calendar, Camera } from "lucide-react";
+import { User, Mail, MapPin, Phone, Calendar, Camera, Briefcase } from "lucide-react";
 import type { PersonalInfo } from "@/lib/types/Profile";
 
 const inputClass =
   "w-full rounded-xl border border-gray-100 bg-gray-50 py-3 pr-4 pl-11 text-sm text-black placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-[#8A38F5]";
 const iconClass = "pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#8A38F5]";
 const labelClass = "mb-1.5 block text-xs font-semibold tracking-wider text-gray-500 uppercase";
+
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children} <span className="text-red-500">*</span>
+    </span>
+  );
+}
 
 interface PersonalInfoCardProps {
   value: PersonalInfo;
@@ -70,7 +78,7 @@ export function PersonalInfoCard({ value, onChange }: PersonalInfoCardProps) {
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Full name</label>
+          <label className={labelClass}><RequiredLabel>Full name</RequiredLabel></label>
           <div className="relative">
             <User className={iconClass} />
             <input
@@ -98,7 +106,21 @@ export function PersonalInfoCard({ value, onChange }: PersonalInfoCardProps) {
         </div>
 
         <div>
-          <label className={labelClass}>Location</label>
+          <label className={labelClass}><RequiredLabel>Professional title</RequiredLabel></label>
+          <div className="relative">
+            <Briefcase className={iconClass} />
+            <input
+              type="text"
+              placeholder="Backend Engineer"
+              value={value.professionalTitle}
+              onChange={(e) => onChange({ ...value, professionalTitle: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className={labelClass}><RequiredLabel>Location</RequiredLabel></label>
           <div className="relative">
             <MapPin className={iconClass} />
             <input
@@ -138,6 +160,17 @@ export function PersonalInfoCard({ value, onChange }: PersonalInfoCardProps) {
             />
           </div>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <label className={labelClass}>Bio</label>
+        <textarea
+          placeholder="Building scalable APIs with NestJS."
+          value={value.bio}
+          onChange={(e) => onChange({ ...value, bio: e.target.value })}
+          rows={3}
+          className="w-full resize-none rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-black placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-[#8A38F5]"
+        />
       </div>
     </div>
   );

@@ -4,9 +4,10 @@ export interface ApplicationRecord {
   jobTitle: string;
   company: string;
   location: string;
-  status: "applied" | "shortlisted" | "interview" | "rejected";
+ status: "applied" | "shortlisted" | "interview" | "rejected" | "hired"; 
   appliedAt: string; // ISO date
   cvFileName?: string;
+  employerEmail?: string;
 }
 
 export interface SavedJobRecord {

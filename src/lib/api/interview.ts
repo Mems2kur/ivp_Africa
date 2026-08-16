@@ -1,3 +1,5 @@
+import { EmployerCandidate } from "./candidate";
+
 export type InterviewStatus = "upcoming" | "completed" | "cancelled";
 export type InterviewType = "Video Call" | "Phone Interview" | "In-Person";
 
@@ -36,38 +38,11 @@ function getInitials(name: string) {
   return name.trim().split(/\s+/).map((w) => w[0]?.toUpperCase()).slice(0, 2).join("");
 }
 
-function seedInterviews(): Interview[] {
-  const now = new Date();
-  const future = (days: number, hour: number, minute: number) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() + days);
-    d.setHours(hour, minute, 0, 0);
-    return d.toISOString();
-  };
-  const past = (days: number) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - days);
-    return d.toISOString();
-  };
-
-  return [
-    { id: crypto.randomUUID(), candidateName: "Chinedu Okafor", candidateInitials: getInitials("Chinedu Okafor"), role: "Senior Product Designer", date: future(3, 10, 0), type: "Video Call", status: "upcoming", meetingLink: "https://meet.ivpafrica.com/mock-1" },
-    { id: crypto.randomUUID(), candidateName: "Genevive Mensah", candidateInitials: getInitials("Genevive Mensah"), role: "Backend Developer", date: future(4, 14, 30), type: "Video Call", status: "upcoming", meetingLink: "https://meet.ivpafrica.com/mock-2" },
-    { id: crypto.randomUUID(), candidateName: "Gideon Pryce", candidateInitials: getInitials("Gideon Pryce"), role: "UI Designer", date: future(7, 11, 15), type: "Phone Interview", status: "upcoming" },
-    { id: crypto.randomUUID(), candidateName: "Amina Yusuf", candidateInitials: getInitials("Amina Yusuf"), role: "Backend Engineer", date: past(5), type: "Video Call", status: "completed" },
-    { id: crypto.randomUUID(), candidateName: "Jason Friday", candidateInitials: getInitials("Jason Friday"), role: "Virtual Manager", date: past(8), type: "Phone Interview", status: "completed" },
-    { id: crypto.randomUUID(), candidateName: "Thaudo Ngobela", candidateInitials: getInitials("Thaudo Ngobela"), role: "Mobile Developer", date: past(2), type: "Video Call", status: "cancelled" },
-  ];
-}
 
 export const interviewsApi = {
   getAll(email: string): Interview[] {
-    const existing = readInterviews(email);
-    if (existing.length > 0) return existing;
-    const seeded = seedInterviews();
-    writeInterviews(email, seeded);
-    return seeded;
-  },
+  return readInterviews(email);
+},
 
  schedule(
   email: string,

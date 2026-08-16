@@ -7,8 +7,9 @@ import { InternshipPreferences } from "./Internship";
 import { SkillsAndDocuments } from "./SkillLevel";
 import { useSession } from "@/lib/auth/useSession";
 import { session as sessionStore } from "@/lib/auth/session";
-import { profileApi } from "@/lib/api/profile";
+import { profileApi, ProfileApi_real } from "@/lib/api/profile";
 import { notificationsApi } from "@/lib/api/notification";
+import { profileCompletionApi } from "@/lib/api/profileCompletion";
 import {
   emptyPersonalInfo,
   emptyEducationInfo,
@@ -42,9 +43,9 @@ export default function ProfilePage() {
     if (!session?.email) return;
     const existing = profileApi.get(session.email);
     if (existing) {
-      setPersonalInfo(existing.personalInfo ?? emptyPersonalInfo);
-      setEducation(existing.education ?? emptyEducationInfo);
-      setExperience(existing.experience ?? emptyExperienceInfo);
+      setPersonalInfo({ ...emptyPersonalInfo, ...existing.personalInfo });
+      setEducation({ ...emptyEducationInfo, ...existing.education });
+      setExperience({ ...emptyExperienceInfo, ...existing.experience });
       setInternshipPreferences(existing.internshipPreferences ?? emptyInternshipPreferences);
       setSkillsAndDocuments(existing.skillsAndDocuments ?? emptySkillsAndDocuments);
       setHasProfile(true);
@@ -53,38 +54,105 @@ export default function ProfilePage() {
     }
   }, [session?.email]);
 
-  function handleSave() {
-    if (!session?.email) return;
-    setSaveError(null);
+  function validateProfile(): string | null {
+    if (!personalInfo.fullName.trim()) return "Full name is required.";
+    if (!personalInfo.location.trim()) return "Location is required.";
+    if (!personalInfo.professionalTitle.trim()) return "Professional title is required.";
 
-    const wasNewProfile = !hasProfile;
+    if (!education.institution.trim()) return "Institution name is required.";
+    if (!education.courseOfStudy.trim()) return "Course of study is required.";
+    if (!education.startDate) return "Education start date is required.";
 
-    const data: CandidateProfileData = {
-      personalInfo,
-      education,
-      experience,
-      internshipPreferences,
-      skillsAndDocuments,
-    };
-
-    try {
-      profileApi.save(session.email, data);
-      notificationsApi.add(session.email, "Your profile was updated");
-    } catch {
-      setSaveError("Couldn't save — your photo or CV file may be too large for local storage.");
-      return;
+    if (experience.hasInternship) {
+      if (!experience.company.trim()) return "Company is required.";
+      if (!experience.role.trim()) return "Role is required.";
+      if (!experience.startDate) return "Experience start date is required.";
     }
 
-    sessionStore.set({
-      ...session,
-      displayName: personalInfo.fullName || session.displayName,
-      avatarUrl: personalInfo.avatarUrl,
-    });
+    const hasAnySkill = skillsAndDocuments.skills.some((s) => s.trim() !== "");
+    if (!hasAnySkill) return "Please add at least one skill.";
 
-    setHasProfile(true);
-    setSaveStatus(wasNewProfile ? "saved" : "updated");
-    setTimeout(() => setSaveStatus("idle"), 2000);
+    return null;
   }
+
+ async function handleSave() {
+  if (!session?.email) return;
+  setSaveError(null);
+
+  const validationError = validateProfile();
+  if (validationError) {
+    setSaveError(validationError);
+    return;
+  }
+
+  const wasNewProfile = !hasProfile;
+
+  const data: CandidateProfileData = {
+    personalInfo,
+    education,
+    experience,
+    internshipPreferences,
+    skillsAndDocuments,
+  };
+
+  try {
+    profileApi.save(session.email, data);
+  } catch {
+    setSaveError("Couldn't save — your photo or CV file may be too large for local storage.");
+    return;
+  }
+
+  const eduResult = await ProfileApi_real.addEducation({
+    institution: education.institution,
+    degree: education.courseOfStudy,
+    fieldOfStudy: education.courseOfStudy,
+    startDate: new Date(education.startDate).toISOString(),
+  });
+
+  let expResult;
+  if (experience.hasInternship) {
+    expResult = await ProfileApi_real.addExperience({
+      company: experience.company,
+      role: experience.role,
+      startDate: new Date(experience.startDate).toISOString(),
+    });
+  }
+
+  const personalResult = await ProfileApi_real.updatePersonalInfo({
+    professionalTitle: personalInfo.professionalTitle,
+    bio: personalInfo.bio,
+    location: personalInfo.location,
+    resumeUrl: skillsAndDocuments.cv?.dataUrl || "",
+  });
+
+  const realSkills = skillsAndDocuments.skills.filter((s) => s.trim() !== "");
+  const skillsResult = await ProfileApi_real.updateSkills(realSkills);
+
+  // Capture completion status from whichever response actually included it —
+  // check them in this order and use the first one found, since we don't
+  // yet know for certain which endpoint returns it.
+  const results = [skillsResult, personalResult, expResult, eduResult].filter(Boolean);
+  const withCompletion = results.find((r) => r?.ok && r.profilePercent !== undefined);
+
+  if (withCompletion?.ok) {
+    profileCompletionApi.set(session.email, {
+      profilePercent: withCompletion.profilePercent ?? 0,
+      isComplete: withCompletion.isComplete ?? false,
+    });
+  }
+
+  notificationsApi.add(session.email, "Your profile was updated");
+
+  sessionStore.set({
+    ...session,
+    displayName: personalInfo.fullName || session.displayName,
+    avatarUrl: personalInfo.avatarUrl,
+  });
+
+  setHasProfile(true);
+  setSaveStatus(wasNewProfile ? "saved" : "updated");
+  setTimeout(() => setSaveStatus("idle"), 2000);
+}
 
   const buttonLabel =
     saveStatus === "saved" ? "Saved ✓" : saveStatus === "updated" ? "Updated ✓" : hasProfile ? "Update" : "Save changes";
@@ -94,7 +162,8 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Profile</h1>
         <p className="mt-1 text-xs text-gray-500 sm:text-sm">
-          Manage your personal info, education, and documents.
+          Manage your personal info, education, and documents. Fields marked{" "}
+          <span className="text-red-500">*</span> are required.
         </p>
       </div>
 
@@ -110,7 +179,7 @@ export default function ProfilePage() {
 
       <div className="fixed right-4 bottom-4 flex flex-col items-end gap-2 sm:right-8 sm:bottom-6">
         {saveError && (
-          <span className="max-w-[220px] text-right text-xs font-medium text-red-500 sm:max-w-none sm:text-sm">
+          <span className="max-w-[220px] rounded-lg bg-red-50 px-3 py-2 text-right text-xs font-medium text-red-500 sm:max-w-xs sm:text-sm">
             {saveError}
           </span>
         )}

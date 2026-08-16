@@ -29,7 +29,7 @@ export const applicationsApi = {
   apply(
     email: string,
     job: { id: string; title: string; company: string; location: string },
-    cvFileName?: string
+    cvFileName?: string, employerEmail?: string,
   ): ApplicationRecord {
     const key = APPLICATIONS_PREFIX + email.toLowerCase();
     const applications = readList<ApplicationRecord>(key);
@@ -43,6 +43,7 @@ export const applicationsApi = {
       status: "applied",
       appliedAt: new Date().toISOString(),
       cvFileName,
+      employerEmail,
     };
 
     writeList(key, [record, ...applications]);

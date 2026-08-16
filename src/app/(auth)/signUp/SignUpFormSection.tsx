@@ -9,6 +9,7 @@ import { RoleToggle } from "./RoleToggle";
 import { session } from "@/lib/auth/session";
 import { profileApi } from "@/lib/api/profile";
 import Image from "next/image";
+import { realAuthApi } from "@/lib/api/client";
 
 interface CandidateFormData {
   firstName: string;
@@ -130,18 +131,20 @@ export default function SignUpFormSection() {
     if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
-    const result = await api.auth.registerCandidate({
+    const result = await realAuthApi.registerCandidate({
       firstName: candidateData.firstName.trim(),
       lastName: candidateData.lastName.trim(),
       email: candidateData.email.trim(),
       password: candidateData.password,
+      confirmPassword: candidateData.confirmPassword,
     });
+   console.log("Candidate registration result:", result);
     setLoading(false);
 
     if (!result.ok) {
-      setError({ submit: "An account already exists with this email address." });
-      return;
-    }
+  setError({ submit: result.message });
+  return;
+}
 
     setPendingEmail(candidateData.email.trim());
     setPendingRedirect("/talent");

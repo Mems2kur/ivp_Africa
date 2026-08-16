@@ -35,12 +35,20 @@ function YesNoToggle({ value, onChange, yesLabel = "Yes", noLabel = "No" }: Togg
   );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mt-5 first:mt-0">
       <label className="mb-2 block text-sm font-medium text-gray-900">{label}</label>
       {children}
     </div>
+  );
+}
+
+function Required({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children} <span className="text-red-500">*</span>
+    </span>
   );
 }
 
@@ -76,7 +84,7 @@ export function EducationSection({ value, onChange }: EducationSectionProps) {
         </div>
       </FormField>
 
-      <FormField label="Course of study">
+      <FormField label={<Required>Course of study</Required>}>
         <input
           type="text"
           value={value.courseOfStudy}
@@ -85,7 +93,16 @@ export function EducationSection({ value, onChange }: EducationSectionProps) {
         />
       </FormField>
 
-      <FormField label="Institution name">
+      <FormField label={<Required>Start date</Required>}>
+        <input
+          type="date"
+          value={value.startDate}
+          onChange={(e) => onChange({ ...value, startDate: e.target.value })}
+          className={inputStyles}
+        />
+      </FormField>
+
+      <FormField label={<Required>Institution name</Required>}>
         <input
           type="text"
           value={value.institution}
@@ -120,6 +137,37 @@ export function ExperienceSection({ value, onChange }: ExperienceSectionProps) {
           onChange={(v) => onChange({ ...value, hasInternship: v })}
         />
       </FormField>
+
+      {value.hasInternship && (
+        <>
+          <FormField label={<Required>Company</Required>}>
+            <input
+              type="text"
+              value={value.company}
+              onChange={(e) => onChange({ ...value, company: e.target.value })}
+              className={inputStyles}
+            />
+          </FormField>
+
+          <FormField label={<Required>Role</Required>}>
+            <input
+              type="text"
+              value={value.role}
+              onChange={(e) => onChange({ ...value, role: e.target.value })}
+              className={inputStyles}
+            />
+          </FormField>
+
+          <FormField label={<Required>Start date</Required>}>
+            <input
+              type="date"
+              value={value.startDate}
+              onChange={(e) => onChange({ ...value, startDate: e.target.value })}
+              className={inputStyles}
+            />
+          </FormField>
+        </>
+      )}
     </div>
   );
 }

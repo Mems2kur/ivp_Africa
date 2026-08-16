@@ -5,6 +5,8 @@ export interface PersonalInfo {
   whatsapp: string;
   age: string;
   avatarUrl?: string;
+  bio:string,
+  professionalTitle:string,
 }
 
 export interface EducationInfo {
@@ -12,10 +14,14 @@ export interface EducationInfo {
   courseOfStudy: string;
   institution: string;
   currentlyInSchool: boolean;
+  startDate: string; // new
 }
 
 export interface ExperienceInfo {
   hasInternship: boolean;
+  company: string;
+  role: string;
+  startDate: string;
 }
 
 export const emptyPersonalInfo: PersonalInfo = {
@@ -25,6 +31,8 @@ export const emptyPersonalInfo: PersonalInfo = {
   whatsapp: "",
   age: "",
   avatarUrl: undefined,
+   professionalTitle: "",
+  bio: "",
 };
 
 export const emptyEducationInfo: EducationInfo = {
@@ -32,12 +40,15 @@ export const emptyEducationInfo: EducationInfo = {
   courseOfStudy: "",
   institution: "",
   currentlyInSchool: true,
+  startDate:""
 };
 
 export const emptyExperienceInfo: ExperienceInfo = {
   hasInternship: false,
+  company: "",
+  role: "",
+  startDate: "",
 };
-
 export interface CandidateProfileData {
   personalInfo: PersonalInfo;
   education?: EducationInfo;

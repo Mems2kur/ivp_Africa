@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Plus, MoreVertical } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
 import { employerJobsApi, EmployerJob, EmployerJobStatus } from "@/lib/api/employerJob";
-
+import { adminUsersApi } from "@/lib/api/adminUsers";
+import { applicationsApi } from "@/lib/api/applications";
+import type { ApplicationRecord } from "@/lib/types/application";
 type TabValue = "all" | EmployerJobStatus;
 
 const tabs: { value: TabValue; label: string }[] = [
@@ -49,10 +51,18 @@ export default function EmployerJobsPage() {
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [applications, setApplications] = useState<ApplicationRecord[]>([]);
 
   function refresh() {
     if (!session?.email) return;
     setJobs(employerJobsApi.getAll(session.email));
+     const allTalent = adminUsersApi.getAll().filter((u) => u.role === "talent");
+  const matched: ApplicationRecord[] = [];
+  allTalent.forEach((talent) => {
+    const apps = applicationsApi.getAll(talent.email);
+    matched.push(...apps.filter((a) => a.employerEmail?.toLowerCase() === session.email.toLowerCase()));
+  });
+  setApplications(matched);
   }
 
   useEffect(() => {
@@ -141,7 +151,8 @@ export default function EmployerJobsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredJobs.map((job, i) => {
-                const palette = avatarPalette[i % avatarPalette.length];
+                const applicantCount = applications.filter((a) => a.jobId === job.id).length;
+                const palette = avatarPalette[i % avatarPalette.length]
                 return (
                   <tr key={job.id} className="transition-colors hover:bg-gray-50">
                     <td className="px-4 py-4 sm:px-5">
@@ -158,7 +169,7 @@ export default function EmployerJobsPage() {
                       </div>
                     </td>
                     <td className="hidden px-4 py-4 text-sm text-gray-600 md:table-cell">{job.department}</td>
-                    <td className="px-4 py-4 text-center text-sm font-semibold text-gray-900">{job.applicants}</td>
+                    <td className="px-4 py-4 text-center text-sm font-semibold text-gray-900">{applicantCount}</td>
                     <td className="px-4 py-4">
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs ${statusStyles[job.status]}`}>
                         {statusLabels[job.status]}

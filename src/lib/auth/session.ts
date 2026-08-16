@@ -4,7 +4,8 @@ export interface Session {
   role: string;
   displayName?: string;
   avatarUrl?: string;
-  redirectPath?: string; // ← new
+  redirectPath?: string;
+  accessToken?: string;
 }
 const SESSION_KEY = "ivp_session";
 type Listener = (data: Session | null) => void;

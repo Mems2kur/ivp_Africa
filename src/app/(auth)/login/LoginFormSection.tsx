@@ -1,5 +1,5 @@
 "use client";
-
+import { realAuthApi } from "@/lib/api/client";
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -65,15 +65,13 @@ async function handleLogin(e: FormEvent) {
   if (Object.keys(errors).length > 0) return;
 
   setLoading(true);
-  const result = await api.auth.login(formData.email.trim(), formData.password);
+  const result = await realAuthApi.login(formData.email.trim(), formData.password);
   setLoading(false);
 
   if (!result.ok) {
-    if (result.reason === "unverified_email") {
-      setError({ submit: "Please verify your email address before logging in." });
+    setError({ submit: result.message });
+    if (result.message.toLowerCase().includes("verify")) {
       setResendVisible(true);
-    } else {
-      setError({ submit: "Invalid email address or password." });
     }
     return;
   }
@@ -81,13 +79,15 @@ async function handleLogin(e: FormEvent) {
   const existingProfile = profileApi.get(result.user.email);
 
   session.set({
-  ...result.user,
-  redirectPath: result.redirectPath, 
-  avatarUrl: existingProfile?.personalInfo?.avatarUrl,
-});
+    email: result.user.email,
+    role: result.user.role,
+    redirectPath: result.redirectPath,
+    avatarUrl: existingProfile?.personalInfo?.avatarUrl,
+    accessToken: result.accessToken,
+  });
+
   router.push(result.redirectPath);
 }
-
   function handleResend() {
     // TODO: call api.auth.resendVerificationEmail(formData.email) once the endpoint exists.
     setResendSent(true);

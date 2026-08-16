@@ -4,43 +4,26 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { adminJobsApi, type AdminJobView } from "@/lib/api/adminJobs";
+import { talentJobsApi, type TalentJob } from "@/lib/utils/talentJobs";
 
-const jobTypes: AdminJobView["type"][] = ["Full-time", "Internship", "Part-time", "Contract"];
+const jobTypes = ["Full-time", "Internship", "Part-time", "Contract", "Remote"];
 
 const categories = [
-  "Technology",
-  "Data & AI",
-  "Finance",
-  "Agriculture",
-  "Logistics",
-  "Healthcare",
-  "Media",
-  "Energy",
-  "Hospitality",
-  "Retail",
-  "Human Resources",
+  "Technology", "Data & AI", "Finance", "Agriculture", "Logistics",
+  "Healthcare", "Media", "Energy", "Hospitality", "Retail", "Human Resources",
+  "General", "Administration", "Operations",
 ];
 
 const statusBadgeStyles: Record<"filled" | "flagged", string> = {
   filled: "bg-gray-100 text-gray-500",
   flagged: "bg-amber-50 text-amber-700",
 };
-
 const statusBadgeLabels: Record<"filled" | "flagged", string> = {
   filled: "Filled",
   flagged: "Flagged",
 };
 
-function FilterCheckbox({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-}) {
+function FilterCheckbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
   return (
     <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-gray-700 sm:gap-2.5 sm:text-sm">
       <span
@@ -62,13 +45,13 @@ function FilterCheckbox({
 
 function JobsContent() {
   const searchParams = useSearchParams();
-  const [allJobs, setAllJobs] = useState<AdminJobView[]>([]);
+  const [allJobs, setAllJobs] = useState<TalentJob[]>([]);
   const [query, setQuery] = useState(searchParams.get("search") ?? "");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    setAllJobs(adminJobsApi.getAll());
+     talentJobsApi.getAll().then(setAllJobs);
   }, []);
 
   useEffect(() => {
@@ -116,24 +99,14 @@ function JobsContent() {
           <h2 className="text-[11px] font-bold text-gray-900 sm:text-sm">Job type</h2>
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:mt-3 sm:flex sm:flex-col sm:gap-2.5">
             {jobTypes.map((type) => (
-              <FilterCheckbox
-                key={type}
-                label={type}
-                checked={selectedTypes.includes(type)}
-                onChange={() => toggle(type, selectedTypes, setSelectedTypes)}
-              />
+              <FilterCheckbox key={type} label={type} checked={selectedTypes.includes(type)} onChange={() => toggle(type, selectedTypes, setSelectedTypes)} />
             ))}
           </div>
 
           <h2 className="mt-3 text-[11px] font-bold text-gray-900 sm:mt-6 sm:text-sm">Category</h2>
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:mt-3 sm:flex sm:flex-col sm:gap-2.5">
             {categories.map((cat) => (
-              <FilterCheckbox
-                key={cat}
-                label={cat}
-                checked={selectedCategories.includes(cat)}
-                onChange={() => toggle(cat, selectedCategories, setSelectedCategories)}
-              />
+              <FilterCheckbox key={cat} label={cat} checked={selectedCategories.includes(cat)} onChange={() => toggle(cat, selectedCategories, setSelectedCategories)} />
             ))}
           </div>
         </div>
@@ -152,7 +125,14 @@ function JobsContent() {
                   {job.initial}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-gray-900 sm:text-base">{job.title}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-xs font-bold text-gray-900 sm:text-base">{job.title}</p>
+                    {job.source === "employer" && (
+                      <span className="shrink-0 rounded-full bg-green-50 px-1.5 py-0.5 text-[9px] font-semibold text-green-700 sm:text-[10px]">
+                        New
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-0.5 truncate text-[10px] text-gray-500 sm:text-sm">
                     {job.company} · {job.location}
                   </p>
@@ -163,9 +143,7 @@ function JobsContent() {
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 {job.status !== "active" && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap sm:px-3 sm:py-1 sm:text-xs ${statusBadgeStyles[job.status]}`}
-                  >
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap sm:px-3 sm:py-1 sm:text-xs ${statusBadgeStyles[job.status]}`}>
                     {statusBadgeLabels[job.status]}
                   </span>
                 )}

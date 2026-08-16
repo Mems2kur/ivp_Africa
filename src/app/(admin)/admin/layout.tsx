@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminSidebar />
         <div className="flex flex-1 flex-col">
           <AdminTopbar />
-          <main className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 bg-gray-50 ">{children}</main>
+          <main className="flex h-screen flex-col gap-6 p-4 sm:p-6 lg:p-8 bg-gray-50 ">{children}</main>
         </div>
       </div>
     </RequireRole>
