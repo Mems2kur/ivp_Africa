@@ -32,7 +32,7 @@ function MessagesContent() {
     const all = refresh();
     if (!all || all.length === 0) return;
 
-    const requestedId = searchParams.get("conversation");
+    const requestedId = searchParams?.get("conversation");
     const validRequested = requestedId && all.some((c) => c.id === requestedId);
     setActiveId(validRequested ? requestedId : all[0].id);
     if (validRequested) setMobileView("chat"); // arriving with a specific conversation → open the chat directly

@@ -29,10 +29,10 @@ function getMatchLabel(percentage: number): { text: string; bg: string; text_: s
 }
 
 export default function CandidateProfilePage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { session } = useSession();
+  const id = params?.id;
+    const { session } = useSession();
 
   const [candidate, setCandidate] = useState<EmployerCandidate | null>(null);
   const [notFound, setNotFound] = useState(false);

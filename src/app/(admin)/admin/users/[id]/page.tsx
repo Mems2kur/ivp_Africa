@@ -8,10 +8,9 @@ import { CandidateDetailView } from "./CandidateDetailView";
 import { EmployerDetailView } from "./EmployerDetailView";
 
 export default function AdminUserProfilePage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
-
+  const id = params?.id;
   const [user, setUser] = useState<AdminUserView | null>(null);
   const [notFound, setNotFound] = useState(false);
 

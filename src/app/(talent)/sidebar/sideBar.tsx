@@ -33,7 +33,7 @@ export function Sidebar() {
 
   function isActive(link: string) {
     if (link === "/talent") return pathname === "/talent";
-    return pathname.startsWith(link);
+    return pathname?.startsWith(link);
   }
 
   function handleLogout() {

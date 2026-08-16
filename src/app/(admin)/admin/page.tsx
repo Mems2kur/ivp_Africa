@@ -33,6 +33,7 @@ const statusStyles: Record<ApplicationRecord["status"], string> = {
   shortlisted: "bg-[#EDE7F8] text-[#8A38F5]",
   interview: "bg-blue-50 text-blue-700",
   rejected: "bg-red-50 text-red-600",
+   hired: "bg-green-50 text-green-700",
 };
 
 

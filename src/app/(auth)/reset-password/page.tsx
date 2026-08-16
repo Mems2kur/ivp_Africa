@@ -10,9 +10,8 @@ const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const token = searchParams.get("token");
-
+const router = useRouter();
+const token = searchParams?.get("token");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

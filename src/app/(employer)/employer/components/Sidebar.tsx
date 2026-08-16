@@ -43,7 +43,7 @@ export function EmployerSidebar() {
 
   function isActive(href: string) {
     if (href === "/employer") return pathname === "/employer";
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href);
   }
 
   function handleLogout() {

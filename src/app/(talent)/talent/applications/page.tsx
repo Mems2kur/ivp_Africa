@@ -12,6 +12,7 @@ const statusStyles: Record<ApplicationRecord["status"], string> = {
   interview: "bg-amber-50 text-[#B77A1E]",
   applied: "bg-gray-100 text-gray-700",
   rejected: "bg-red-50 text-[#C94F3D]",
+  hired: "bg-green-50 text-green-600",
 };
 
 const statusLabels: Record<ApplicationRecord["status"], string> = {
@@ -19,6 +20,7 @@ const statusLabels: Record<ApplicationRecord["status"], string> = {
   interview: "Interview",
   applied: "Applied",
   rejected: "Rejected",
+  hired: "bg-green-50 text-green-600",
 };
 
 const mockApplications: ApplicationRecord[] = [

@@ -15,7 +15,7 @@ function PostJobContent() {
   const { session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const editId = searchParams.get("id");
+  const editId = searchParams?.get("id");
   const isEditMode = Boolean(editId);
 
   const [title, setTitle] = useState("");
