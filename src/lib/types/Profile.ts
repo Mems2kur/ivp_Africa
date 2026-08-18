@@ -8,14 +8,38 @@ export interface PersonalInfo {
   bio:string,
   professionalTitle:string,
 }
+export interface SkillsAndDocumentsInfo {
+  skills: string[];
+  certifications: string[]; // new
+  portfolioLink: string;
+  resumeUrl: string;
+}
+
+export const emptySkillsAndDocuments: SkillsAndDocumentsInfo = {
+  skills: ["", "", ""],
+  certifications: [],
+  portfolioLink: "",
+  resumeUrl: "",
+};
 
 export interface EducationInfo {
   educationLevel: string;
   courseOfStudy: string;
   institution: string;
   currentlyInSchool: boolean;
-  startDate: string; // new
+  startDate: string;
+  endDate: string; // new
 }
+
+export const emptyEducationInfo: EducationInfo = {
+  educationLevel: "Undergraduate",
+  courseOfStudy: "",
+  institution: "",
+  currentlyInSchool: false,
+  startDate: "",
+  endDate: "",
+};
+
 
 export interface ExperienceInfo {
   hasInternship: boolean;
@@ -35,13 +59,7 @@ export const emptyPersonalInfo: PersonalInfo = {
   bio: "",
 };
 
-export const emptyEducationInfo: EducationInfo = {
-  educationLevel: "Undergraduate",
-  courseOfStudy: "",
-  institution: "",
-  currentlyInSchool: true,
-  startDate:""
-};
+
 
 export const emptyExperienceInfo: ExperienceInfo = {
   hasInternship: false,
@@ -59,27 +77,17 @@ export interface CandidateProfileData {
 export interface InternshipPreferencesInfo {
   selectedRoles: string[];
   duration: string;
+  preferredJobType: string;
+  preferredLocation: string;
+  expectedSalary: string;
+  availability: string;
 }
 
 export const emptyInternshipPreferences: InternshipPreferencesInfo = {
   selectedRoles: [],
-  duration: "3-6 months",
-};
-
-export interface CvDocument {
-  fileName: string;
-  dataUrl: string; // base64
-  sizeBytes: number;
-}
-
-export interface SkillsAndDocumentsInfo {
-  skills: string[];
-  portfolioLink: string;
-  cv: CvDocument | null;
-}
-
-export const emptySkillsAndDocuments: SkillsAndDocumentsInfo = {
-  skills: ["", "", ""],
-  portfolioLink: "",
-  cv: null,
+  duration: "",
+  preferredJobType: "",
+  preferredLocation: "",
+  expectedSalary: "",
+  availability: "",
 };

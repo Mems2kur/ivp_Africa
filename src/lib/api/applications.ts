@@ -1,8 +1,46 @@
-import type { ApplicationRecord, SavedJobRecord } from "@/lib/types/application";
+import type { ApplicationRecord, RealApplication, SavedJobRecord } from "@/lib/types/application";
 import { notificationsApi } from "@/lib/api/notification";
+import { apiFetch } from "@/lib/api/httpClient";
+import { session } from "@/lib/auth/session";
+
 
 const APPLICATIONS_PREFIX = "ivp_applications_";
 const SAVED_JOBS_PREFIX = "ivp_saved_jobs_";
+
+
+function authHeaders(): HeadersInit {
+  const current = session.get();
+  return current?.accessToken ? { Authorization: `Bearer ${current.accessToken}` } : {};
+}
+function normalizeApplication(raw: any): RealApplication {
+  return {
+    id: raw.id ?? raw._id ?? "",
+    jobId: raw.jobId ?? raw.job?.id ?? "",
+    jobTitle: raw.jobTitle ?? raw.job?.title ?? "Untitled role",
+    company: raw.company ?? raw.job?.company ?? "Unknown company",
+    location: raw.location ?? raw.job?.location ?? "Unknown location",
+    status: raw.status ?? "PENDING",
+    appliedAt:
+      raw.appliedAt ??
+      raw.createdAt ??
+      new Date().toISOString(),
+    interview: raw.interview ?? undefined,
+  };
+}
+export const applicationsApi_Real={
+  getApplication: async()=>{
+    const res = await apiFetch<{data: any[]} | any[]>("/api/v1/applications/my-applications", {
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      return { ok: false as const, message: res.message };
+    }
+
+    // Response shape (bare array vs. { data: [...] }) is unconfirmed — handle both.
+    const rawList = Array.isArray(res.data) ? res.data : res.data.data ?? [];
+    return { ok: true as const, applications: rawList.map(normalizeApplication) };
+  }
+}
 
 function readList<T>(key: string): T[] {
   if (typeof window === "undefined") return [];
@@ -21,6 +59,7 @@ export const applicationsApi = {
   getAll(email: string): ApplicationRecord[] {
     return readList<ApplicationRecord>(APPLICATIONS_PREFIX + email.toLowerCase());
   },
+
 
   isApplied(email: string, jobId: string): boolean {
     return this.getAll(email).some((a) => a.jobId === jobId);

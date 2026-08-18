@@ -110,6 +110,7 @@ export function EducationSection({ value, onChange }: EducationSectionProps) {
           className={inputStyles}
         />
       </FormField>
+      
 
       <FormField label="Currently in school?">
         <YesNoToggle
@@ -117,6 +118,16 @@ export function EducationSection({ value, onChange }: EducationSectionProps) {
           onChange={(v) => onChange({ ...value, currentlyInSchool: v })}
         />
       </FormField>
+      {!value.currentlyInSchool && (
+  <FormField label="End date">
+    <input
+      type="date"
+      value={value.endDate}
+      onChange={(e) => onChange({ ...value, endDate: e.target.value })}
+      className={inputStyles}
+    />
+  </FormField>
+)}
     </div>
   );
 }

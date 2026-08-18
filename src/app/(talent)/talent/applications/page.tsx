@@ -2,12 +2,12 @@
 
 import { manrope, plusJakartaSans } from "@/app/font";
 import { useSession } from "@/lib/auth/useSession";
-import { applicationsApi } from "@/lib/api/applications";
-import type { ApplicationRecord } from "@/lib/types/application";
+import {  applicationsApi_Real } from "@/lib/api/applications";
+import type { ApplicationRecord, RealApplication } from "@/lib/types/application";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const statusStyles: Record<ApplicationRecord["status"], string> = {
+const statusStyles: Record<RealApplication["status"], string> = {
   shortlisted: "bg-[#EDE7F8] text-[#8A38F5]",
   interview: "bg-amber-50 text-[#B77A1E]",
   applied: "bg-gray-100 text-gray-700",
@@ -15,7 +15,7 @@ const statusStyles: Record<ApplicationRecord["status"], string> = {
   hired: "bg-green-50 text-green-600",
 };
 
-const statusLabels: Record<ApplicationRecord["status"], string> = {
+const statusLabels: Record<RealApplication["status"], string> = {
   shortlisted: "Shortlisted",
   interview: "Interview",
   applied: "Applied",
@@ -70,7 +70,7 @@ function formatDate(iso: string) {
   });
 }
 
-function StatusBadge({ status }: { status: ApplicationRecord["status"] }) {
+function StatusBadge({ status }: { status: RealApplication["status"] }) {
   return (
     <span
       className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs ${statusStyles[status]} ${manrope.className}`}
@@ -82,13 +82,24 @@ function StatusBadge({ status }: { status: ApplicationRecord["status"] }) {
 
 export default function ApplicationsPage() {
   const { session, loading } = useSession();
-  const [realApplications, setRealApplications] = useState<ApplicationRecord[]>([]);
+  const [realApplications, setRealApplications] = useState<RealApplication[]>([]);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     if (!session?.email) return;
-    setRealApplications(applicationsApi.getAll(session.email));
+    const loadApplications = async()=>{
+      const res = await applicationsApi_Real.getApplication();
+
+      if(res.ok){
+        setRealApplications(res.applications)
+      }else {
+      console.error("Failed to load applications:", res.message);
+      setRealApplications([]);
+    }
     setChecked(true);
+    }
+
+     loadApplications();
   }, [session?.email]);
 
   const isUsingMockData = checked && realApplications.length === 0;
@@ -153,9 +164,9 @@ export default function ApplicationsPage() {
                     <p className={`truncate text-sm font-semibold text-gray-900 ${manrope.className}`}>
                       {app.jobTitle}
                     </p>
-                    <p className={`mt-0.5 truncate text-xs text-gray-500 ${plusJakartaSans.className}`}>
+                    {/* <p className={`mt-0.5 truncate text-xs text-gray-500 ${plusJakartaSans.className}`}>
                       {app.company} · {app.location}
-                    </p>
+                    </p> */}
                   </div>
                   <StatusBadge status={app.status} />
                 </div>

@@ -46,8 +46,8 @@ export default function ProfilePage() {
       setPersonalInfo({ ...emptyPersonalInfo, ...existing.personalInfo });
       setEducation({ ...emptyEducationInfo, ...existing.education });
       setExperience({ ...emptyExperienceInfo, ...existing.experience });
-      setInternshipPreferences(existing.internshipPreferences ?? emptyInternshipPreferences);
-      setSkillsAndDocuments(existing.skillsAndDocuments ?? emptySkillsAndDocuments);
+     setInternshipPreferences({ ...emptyInternshipPreferences, ...existing.internshipPreferences });
+      setSkillsAndDocuments({ ...emptySkillsAndDocuments, ...existing.skillsAndDocuments });
       setHasProfile(true);
     } else {
       setPersonalInfo((p) => ({ ...p, email: session.email, fullName: session.displayName ?? "" }));
@@ -75,84 +75,100 @@ export default function ProfilePage() {
     return null;
   }
 
- async function handleSave() {
-  if (!session?.email) return;
-  setSaveError(null);
+  async function handleSave() {
+    if (!session?.email) return;
+    setSaveError(null);
 
-  const validationError = validateProfile();
-  if (validationError) {
-    setSaveError(validationError);
-    return;
-  }
+    const validationError = validateProfile();
+    if (validationError) {
+      setSaveError(validationError);
+      return;
+    }
 
-  const wasNewProfile = !hasProfile;
+    const wasNewProfile = !hasProfile;
 
-  const data: CandidateProfileData = {
-    personalInfo,
-    education,
-    experience,
-    internshipPreferences,
-    skillsAndDocuments,
-  };
+    const data: CandidateProfileData = {
+      personalInfo,
+      education,
+      experience,
+      internshipPreferences,
+      skillsAndDocuments,
+    };
 
-  try {
-    profileApi.save(session.email, data);
-  } catch {
-    setSaveError("Couldn't save — your photo or CV file may be too large for local storage.");
-    return;
-  }
+    try {
+      profileApi.save(session.email, data);
+    } catch {
+      setSaveError("Couldn't save — data may be too large for local storage.");
+      return;
+    }
 
-  const eduResult = await ProfileApi_real.addEducation({
-    institution: education.institution,
-    degree: education.courseOfStudy,
-    fieldOfStudy: education.courseOfStudy,
-    startDate: new Date(education.startDate).toISOString(),
-  });
+   const eduResult = await ProfileApi_real.addEducation({
+  institution: education.institution,
+  degree: education.courseOfStudy,
+  fieldOfStudy: education.courseOfStudy,
+  startDate: new Date(education.startDate).toISOString(),
+  endDate: education.currentlyInSchool
+    ? undefined
+    : education.endDate
+      ? new Date(education.endDate).toISOString()
+      : undefined,
+});
 
-  let expResult;
-  if (experience.hasInternship) {
-    expResult = await ProfileApi_real.addExperience({
-      company: experience.company,
-      role: experience.role,
-      startDate: new Date(experience.startDate).toISOString(),
+    let expResult;
+    if (experience.hasInternship) {
+      expResult = await ProfileApi_real.addExperience({
+        company: experience.company,
+        role: experience.role,
+        startDate: new Date(experience.startDate).toISOString(),
+      });
+    }
+
+   const personalResult = await ProfileApi_real.updatePersonalInfo({
+  professionalTitle: personalInfo.professionalTitle,
+  bio: personalInfo.bio,
+  location: personalInfo.location,
+  profileImageUrl:personalInfo.avatarUrl || "",
+});
+const prefsResult = await ProfileApi_real.updateEmploymentPreferences({
+  preferredJobType: internshipPreferences.preferredJobType,
+  preferredLocation: internshipPreferences.preferredLocation,
+  expectedSalary: internshipPreferences.expectedSalary,
+  availability: internshipPreferences.availability,
+});
+
+const realSkills = skillsAndDocuments.skills.filter((s) => s.trim() !== "");
+const skillsResult = await ProfileApi_real.updateSkills({
+  skills: realSkills,
+  certifications: skillsAndDocuments.certifications,
+  portfolioUrl: skillsAndDocuments.portfolioLink,
+  resumeUrl: skillsAndDocuments.resumeUrl,
+});
+    // Capture completion status from whichever response actually included it —
+    // check them in this order and use the first one found, since we don't
+    // yet know for certain which endpoint returns it.
+    
+    const results = [skillsResult, personalResult, prefsResult, expResult, eduResult].filter(Boolean);
+    const withCompletion = results.find((r) => r?.ok && r.profilePercent !== undefined);
+
+    if (withCompletion?.ok) {
+      profileCompletionApi.set(session.email, {
+        profilePercent: withCompletion.profilePercent ?? 0,
+        isComplete: withCompletion.isComplete ?? false,
+      });
+    }
+
+    notificationsApi.add(session.email, "Your profile was updated");
+
+    sessionStore.set({
+      ...session,
+      displayName: personalInfo.fullName || session.displayName,
+      avatarUrl: personalInfo.avatarUrl,
     });
+
+    setHasProfile(true);
+    setSaveStatus(wasNewProfile ? "saved" : "updated");
+    setTimeout(() => setSaveStatus("idle"), 2000);
   }
-
-  const personalResult = await ProfileApi_real.updatePersonalInfo({
-    professionalTitle: personalInfo.professionalTitle,
-    bio: personalInfo.bio,
-    location: personalInfo.location,
-    resumeUrl: skillsAndDocuments.cv?.dataUrl || "",
-  });
-
-  const realSkills = skillsAndDocuments.skills.filter((s) => s.trim() !== "");
-  const skillsResult = await ProfileApi_real.updateSkills(realSkills);
-
-  // Capture completion status from whichever response actually included it —
-  // check them in this order and use the first one found, since we don't
-  // yet know for certain which endpoint returns it.
-  const results = [skillsResult, personalResult, expResult, eduResult].filter(Boolean);
-  const withCompletion = results.find((r) => r?.ok && r.profilePercent !== undefined);
-
-  if (withCompletion?.ok) {
-    profileCompletionApi.set(session.email, {
-      profilePercent: withCompletion.profilePercent ?? 0,
-      isComplete: withCompletion.isComplete ?? false,
-    });
-  }
-
-  notificationsApi.add(session.email, "Your profile was updated");
-
-  sessionStore.set({
-    ...session,
-    displayName: personalInfo.fullName || session.displayName,
-    avatarUrl: personalInfo.avatarUrl,
-  });
-
-  setHasProfile(true);
-  setSaveStatus(wasNewProfile ? "saved" : "updated");
-  setTimeout(() => setSaveStatus("idle"), 2000);
-}
 
   const buttonLabel =
     saveStatus === "saved" ? "Saved ✓" : saveStatus === "updated" ? "Updated ✓" : hasProfile ? "Update" : "Save changes";

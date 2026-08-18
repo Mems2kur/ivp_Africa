@@ -26,35 +26,40 @@ function keyFor(email: string) {
 
 export const ProfileApi_real ={
 
-  updatePersonalInfo: async (input: {
+ updatePersonalInfo: async (input: {
   professionalTitle: string;
   bio: string;
   location: string;
-  resumeUrl: string;
+  profileImageUrl:string,
 }) => {
   const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>("/api/v1/talent/profile/personal", {
     method: "PUT",
     headers: authHeaders(),
     body: JSON.stringify(input),
   });
-   return result.ok
+  return result.ok
     ? { ok: true as const, profilePercent: result.data.profilePercent, isComplete: result.data.isComplete }
     : { ok: false as const, message: result.message };
 },
 
-  addExperience: async (input: { company: string;
-     role: string; startDate: string }) => {
-    const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>("/api/v1/talent/profile/experience", {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify(input),
-    });
+addExperience: async (input: { company: string; role: string; startDate: string }) => {
+  const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>("/api/v1/talent/profile/experience", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(input),
+  });
   return result.ok
     ? { ok: true as const, profilePercent: result.data.profilePercent, isComplete: result.data.isComplete }
-    : { ok: false as const, message: result.message }; 
-  },
+    : { ok: false as const, message: result.message };
+},
 
-  addEducation: async (input: { institution: string; degree: string; fieldOfStudy: string; startDate: string }) => {
+addEducation: async (input: {
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: string;
+  endDate?: string;
+}) => {
   const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>(
     "/api/v1/talent/profile/education",
     { method: "POST", headers: authHeaders(), body: JSON.stringify(input) }
@@ -63,17 +68,36 @@ export const ProfileApi_real ={
     ? { ok: true as const, profilePercent: result.data.profilePercent, isComplete: result.data.isComplete }
     : { ok: false as const, message: result.message };
 },
-  
-  updateSkills: async (skills: string[]) => {
-    const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>("/api/v1/talent/profile/skills", {
-      method: "PUT",
-      headers: authHeaders(),
-      body: JSON.stringify({ skills }),
-    });
+
+updateSkills: async (input: {
+  skills: string[];
+  certifications: string[];
+  portfolioUrl: string;
+  resumeUrl: string;
+}) => {
+  const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>("/api/v1/talent/profile/skills", {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(input),
+  });
   return result.ok
     ? { ok: true as const, profilePercent: result.data.profilePercent, isComplete: result.data.isComplete }
-    : { ok: false as const, message: result.message }; 
-  },
+    : { ok: false as const, message: result.message };
+},
+updateEmploymentPreferences: async (input: {
+  preferredJobType: string;
+  preferredLocation: string;
+  expectedSalary: string;
+  availability: string;
+}) => {
+  const result = await apiFetch<{ message?: string } & ProfileCompletionMeta>(
+    "/api/v1/talent/profile/employment-preferences",
+    { method: "PUT", headers: authHeaders(), body: JSON.stringify(input) }
+  );
+  return result.ok
+    ? { ok: true as const, profilePercent: result.data.profilePercent, isComplete: result.data.isComplete }
+    : { ok: false as const, message: result.message };
+},
 }
 
 export const profileApi = {

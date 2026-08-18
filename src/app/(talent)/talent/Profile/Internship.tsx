@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import type { InternshipPreferencesInfo } from "@/lib/types/Profile";
 
 const roleOptions = [
@@ -21,6 +21,11 @@ const roleOptions = [
 ];
 
 const durationOptions = ["1-3 months", "3-6 months", "6+ months"];
+const jobTypeOptions = ["Full-time", "Part-time", "Contract", "Internship", "Remote"];
+const availabilityOptions = ["Immediate", "2 weeks notice", "1 month notice", "Flexible"];
+
+const inputStyles =
+  "w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-[#8A38F5]";
 
 function RoleCheckbox({
   label,
@@ -97,6 +102,64 @@ export function InternshipPreferences({ value, onChange }: InternshipPreferences
               {option}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-900">Preferred job type</label>
+          <div className="relative">
+            <select
+              value={value.preferredJobType}
+              onChange={(e) => onChange({ ...value, preferredJobType: e.target.value })}
+              className={`${inputStyles} appearance-none pr-10`}
+            >
+              <option value="">Select job type</option>
+              {jobTypeOptions.map((opt) => (
+                <option key={opt}>{opt}</option>
+              ))}
+            </select>
+            <ChevronDown size={18} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400" />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-900">Preferred location</label>
+          <input
+            type="text"
+            placeholder="e.g. Remote, Lagos, Nigeria"
+            value={value.preferredLocation}
+            onChange={(e) => onChange({ ...value, preferredLocation: e.target.value })}
+            className={inputStyles}
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-900">Expected salary</label>
+          <input
+            type="text"
+            placeholder="e.g. NGN 800,000 / month"
+            value={value.expectedSalary}
+            onChange={(e) => onChange({ ...value, expectedSalary: e.target.value })}
+            className={inputStyles}
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-900">Availability</label>
+          <div className="relative">
+            <select
+              value={value.availability}
+              onChange={(e) => onChange({ ...value, availability: e.target.value })}
+              className={`${inputStyles} appearance-none pr-10`}
+            >
+              <option value="">Select availability</option>
+              {availabilityOptions.map((opt) => (
+                <option key={opt}>{opt}</option>
+              ))}
+            </select>
+            <ChevronDown size={18} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400" />
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,31 @@
-import type { Conversation, Message } from "@/lib/types/message";
+import type { Conversation, Message, RealConversation,RealMessage } from "@/lib/types/message";
+
+import { apiFetch } from "@/lib/api/httpClient";
+import { session } from "@/lib/auth/session";
+import api from "@/services/api";
+
+function authHeaders(): HeadersInit {
+  const current = session.get();
+  return current?.accessToken ? { Authorization: `Bearer ${current.accessToken}` } : {};
+}
+
+function normalizeConversation(raw:any): RealConversation{
+  return {
+    id: raw.id ?? raw._id ?? "",
+    applicationId: raw.applicationId,
+    otherPartyName: raw.otherPartyName ?? raw.company ?? raw.employerName ?? "Unknown",
+    lastMessage: raw.lastMessage?.content ?? raw.lastMessage,
+    updatedAt: raw.updatedAt ?? raw.lastMessageAt,
+  };
+}
+function normalizeMessage(raw: any): RealMessage {
+  return {
+    id: raw.id ?? raw._id ?? "",
+    content: raw.content ?? "",
+    senderId: raw.senderId ?? raw.sender?.id ?? "",
+    createdAt: raw.createdAt ?? raw.sentAt ?? new Date().toISOString(),
+  };
+}
 
 const PREFIX = "ivp_conversations_";
 type Listener = () => void;
@@ -51,6 +78,50 @@ function seedConversations(): Conversation[] {
     },
   ];
 }
+
+export const messageApi_Real={
+  sendMessage: async(applicationId: string, content:string)=>{
+    const res = await apiFetch<{message?: string}> ("/api/v1/messaging/send", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ applicationId, content }),
+    });
+     return res.ok ? { ok: true as const } : { ok: false as const, message: res.message };
+  },
+
+  getConversation:async()=>{
+    const res = await apiFetch<{data: any[]} |any[]>("/api/v1/messaging/conversations", {
+      headers: authHeaders(),
+      
+    });
+    if(!res.ok){
+      return {ok: false as const, message: res.message}
+    }
+    const rawList = Array.isArray(res.data) ? res.data : res.data.data ?? [];
+    return { ok: true as const, conversations: rawList.map(normalizeConversation) };
+  }, 
+
+  getMessages: async (conversationId: string) => {
+    const result = await apiFetch<{ data: any[] } | any[]>(
+      `/api/v1/messaging/conversations/${conversationId}/messages`,
+      { headers: authHeaders() }
+    );
+    if (!result.ok) {
+      return { ok: false as const, message: result.message };
+    }
+    const rawList = Array.isArray(result.data) ? result.data : result.data.data ?? [];
+    return { ok: true as const, messages: rawList.map(normalizeMessage) };
+  },
+
+  deleteConversation: async (conversationId: string) => {
+    const result = await apiFetch<{ message?: string }>(`/api/v1/messaging/conversations/${conversationId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    return result.ok ? { ok: true as const } : { ok: false as const, message: result.message };
+  },
+}
+
 
 export const messagesApi = {
   getAll(email: string): Conversation[] {
