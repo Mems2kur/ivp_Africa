@@ -20,27 +20,25 @@ function RequiredLabel({ children }: { children: React.ReactNode }) {
 interface PersonalInfoCardProps {
   value: PersonalInfo;
   onChange: (next: PersonalInfo) => void;
+  onPhotoFileSelected: (file: File | null) => void;
 }
 
-export function PersonalInfoCard({ value, onChange }: PersonalInfoCardProps) {
+export function PersonalInfoCard({ value, onChange,onPhotoFileSelected }: PersonalInfoCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 1_000_000) {
-      alert("Please choose an image under 1MB — larger images can overflow local storage.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      onChange({ ...value, avatarUrl: reader.result as string });
-    };
-    reader.readAsDataURL(file);
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 1_000_000) {
+    alert("Please choose an image under 1MB.");
+    return;
   }
+  onPhotoFileSelected(file); // new — raw file for the real upload
 
+  const reader = new FileReader();
+  reader.onload = () => onChange({ ...value, avatarUrl: reader.result as string }); // unchanged — local preview
+  reader.readAsDataURL(file);
+}
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-[#8A38F5]/5 sm:p-6">
       <h2 className="text-lg font-bold text-black">Personal info</h2>
@@ -133,19 +131,19 @@ export function PersonalInfoCard({ value, onChange }: PersonalInfoCardProps) {
           </div>
         </div>
 
-        <div>
-          <label className={labelClass}>WhatsApp number</label>
-          <div className="relative">
-            <Phone className={iconClass} />
-            <input
-              type="tel"
-              placeholder="+234 801 234 5678"
-              value={value.whatsapp}
-              onChange={(e) => onChange({ ...value, whatsapp: e.target.value })}
-              className={inputClass}
-            />
-          </div>
-        </div>
+       <div>
+      <label className={labelClass}><RequiredLabel>Phone number</RequiredLabel></label>
+      <div className="relative">
+        <Phone className={iconClass} />
+        <input
+          type="tel"
+          placeholder="+234 801 234 5678"
+          value={value.whatsapp}
+          onChange={(e) => onChange({ ...value, whatsapp: e.target.value })}
+          className={inputClass}
+        />
+      </div>
+    </div>
 
         <div>
           <label className={labelClass}>Age</label>

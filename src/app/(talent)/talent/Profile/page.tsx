@@ -38,6 +38,8 @@ export default function ProfilePage() {
   const [hasProfile, setHasProfile] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "updated">("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
+const [avatarFile, setAvatarFile] = useState<File | null>(null);
+const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!session?.email) return;
@@ -127,7 +129,10 @@ export default function ProfilePage() {
   professionalTitle: personalInfo.professionalTitle,
   bio: personalInfo.bio,
   location: personalInfo.location,
-  profileImageUrl:personalInfo.avatarUrl || "",
+  profileImage: avatarFile,
+  phoneNumber:personalInfo.whatsapp,
+  age:personalInfo.age,
+
 });
 const prefsResult = await ProfileApi_real.updateEmploymentPreferences({
   preferredJobType: internshipPreferences.preferredJobType,
@@ -141,7 +146,7 @@ const skillsResult = await ProfileApi_real.updateSkills({
   skills: realSkills,
   certifications: skillsAndDocuments.certifications,
   portfolioUrl: skillsAndDocuments.portfolioLink,
-  resumeUrl: skillsAndDocuments.resumeUrl,
+  resume: resumeFile,
 });
     // Capture completion status from whichever response actually included it —
     // check them in this order and use the first one found, since we don't
@@ -183,7 +188,7 @@ const skillsResult = await ProfileApi_real.updateSkills({
         </p>
       </div>
 
-      <PersonalInfoCard value={personalInfo} onChange={setPersonalInfo} />
+      <PersonalInfoCard onPhotoFileSelected={setAvatarFile} value={personalInfo} onChange={setPersonalInfo} />
       <EducationExperienceGrid
         education={education}
         onEducationChange={setEducation}
@@ -191,7 +196,7 @@ const skillsResult = await ProfileApi_real.updateSkills({
         onExperienceChange={setExperience}
       />
       <InternshipPreferences value={internshipPreferences} onChange={setInternshipPreferences} />
-      <SkillsAndDocuments value={skillsAndDocuments} onChange={setSkillsAndDocuments} />
+      <SkillsAndDocuments onResumeFileSelected={setResumeFile} value={skillsAndDocuments} onChange={setSkillsAndDocuments} />
 
       <div className="fixed right-4 bottom-4 flex flex-col items-end gap-2 sm:right-8 sm:bottom-6">
         {saveError && (

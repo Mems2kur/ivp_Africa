@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Upload, FileText, X } from "lucide-react";
 import type { SkillsAndDocumentsInfo } from "@/lib/types/Profile";
 
 const inputStyles =
@@ -10,10 +10,13 @@ const inputStyles =
 interface SkillsAndDocumentsProps {
   value: SkillsAndDocumentsInfo;
   onChange: (next: SkillsAndDocumentsInfo) => void;
+  onResumeFileSelected: (file: File | null) => void;
 }
 
-export function SkillsAndDocuments({ value, onChange }: SkillsAndDocumentsProps) {
+export function SkillsAndDocuments({ value, onChange, onResumeFileSelected }: SkillsAndDocumentsProps) {
   const [certDraft, setCertDraft] = useState("");
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateSkill = (index: number, skillValue: string) => {
     const next = value.skills.map((s, i) => (i === index ? skillValue : s));
@@ -32,6 +35,13 @@ export function SkillsAndDocuments({ value, onChange }: SkillsAndDocumentsProps)
 
   function handleRemoveCert(cert: string) {
     onChange({ ...value, certifications: value.certifications.filter((c) => c !== cert) });
+  }
+
+  function handleResumeSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setResumeFileName(file.name);
+    onResumeFileSelected(file);
   }
 
   return (
@@ -58,17 +68,9 @@ export function SkillsAndDocuments({ value, onChange }: SkillsAndDocumentsProps)
         <label className="mb-2 block text-xs font-medium text-gray-900 sm:text-sm">Certifications</label>
         <div className="flex min-h-[42px] flex-wrap items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 focus-within:border-[#8A38F5] sm:min-h-[46px]">
           {value.certifications.map((cert) => (
-            <span
-              key={cert}
-              className="flex items-center gap-1 rounded-full bg-[#EDE7F8] px-2.5 py-1 text-xs font-medium text-[#8A38F5]"
-            >
+            <span key={cert} className="flex items-center gap-1 rounded-full bg-[#EDE7F8] px-2.5 py-1 text-xs font-medium text-[#8A38F5]">
               {cert}
-              <button
-                type="button"
-                onClick={() => handleRemoveCert(cert)}
-                className="text-[#8A38F5] hover:text-[#6C3CFF]"
-                aria-label={`Remove ${cert}`}
-              >
+              <button type="button" onClick={() => handleRemoveCert(cert)} className="text-[#8A38F5] hover:text-[#6C3CFF]" aria-label={`Remove ${cert}`}>
                 <X size={12} />
               </button>
             </span>
@@ -90,22 +92,33 @@ export function SkillsAndDocuments({ value, onChange }: SkillsAndDocumentsProps)
           type="url"
           value={value.portfolioLink}
           onChange={(e) => onChange({ ...value, portfolioLink: e.target.value })}
-          placeholder="https://your-portfolio.com"
+          placeholder="https://github.com/yourusername"
           className={inputStyles}
         />
       </div>
 
       <div className="mt-4 sm:mt-5">
-        <label className="mb-2 block text-xs font-medium text-gray-900 sm:text-sm">CV / Resume link</label>
-        <div className="relative">
-          <FileText size={16} className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[#8A38F5]" />
-          <input
-            type="url"
-            value={value.resumeUrl}
-            onChange={(e) => onChange({ ...value, resumeUrl: e.target.value })}
-            placeholder="https://drive.google.com/your-resume.pdf"
-            className={`${inputStyles} pl-11`}
-          />
+        <label className="mb-2 block text-xs font-medium text-gray-900 sm:text-sm">CV / Resume</label>
+        <div className="rounded-xl border border-dashed border-gray-300 px-4 py-6 text-center sm:px-6 sm:py-8">
+          {resumeFileName ? (
+            <div className="flex items-center justify-center gap-2">
+              <FileText size={18} className="text-[#8A38F5]" />
+              <span className="text-xs font-medium text-gray-900 sm:text-sm">{resumeFileName}</span>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500 sm:text-sm">No file uploaded yet</p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#EDE7F8] px-4 py-2 text-xs font-semibold text-[#8A38F5] transition-colors hover:bg-[#DCCFF5] sm:px-5 sm:text-sm"
+              >
+                <Upload size={14} />
+                Upload CV (PDF)
+              </button>
+            </>
+          )}
+          <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleResumeSelect} className="hidden" />
         </div>
       </div>
     </div>
