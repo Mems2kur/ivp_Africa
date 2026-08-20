@@ -73,14 +73,14 @@ function formatRelative(iso?: string) {
   const skills = realProfile?.skillsAndDocuments?.skills.filter((s) => s.trim() !== "") ?? [];
   const education = realProfile?.education;
   const experience = realProfile?.experience;
-  const cv = realProfile?.skillsAndDocuments?.cv;
+  const resumeUrl = realProfile?.skillsAndDocuments?.resumeUrl;
   const completionPercent = realProfile
     ? Math.round(
         ([
           realProfile.personalInfo?.fullName,
           education?.institution,
           skills.length > 0,
-          cv,
+          resumeUrl,
         ].filter(Boolean).length /
           4) *
           100
@@ -261,16 +261,17 @@ function formatRelative(iso?: string) {
 
           {activeTab === "Resume" && (
             <div>
-              {cv ? (
-                <a
-                  href={cv.dataUrl}
-                  download={cv.fileName}
+              {resumeUrl ? (
+                
+                <a href={resumeUrl}
+                  target="_blank"
+                  rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl bg-[#EDE7F8] px-4 py-2.5 text-sm font-semibold text-[#8A38F5] hover:bg-[#DCCFF5]"
                 >
-                  Download {cv.fileName}
+                  View resume
                 </a>
               ) : (
-                <p className="py-8 text-center text-sm text-gray-400">No CV uploaded yet.</p>
+                <p className="py-8 text-center text-sm text-gray-400">No resume link added yet.</p>
               )}
             </div>
           )}

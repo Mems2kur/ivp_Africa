@@ -51,7 +51,7 @@ export default function SignUpPage() {
           className="relative z-10 flex items-center p-8 xl:p-12"
         >
           <Image
-            src="/img_ivp/Ivp_logo.png"
+            src="/img_ivp/ivp_logo.png"
             alt="IVP Africa"
             width={128}
             height={128}
