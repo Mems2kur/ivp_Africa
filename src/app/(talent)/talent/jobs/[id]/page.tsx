@@ -46,15 +46,14 @@ const jobId = params?.id;
     return <p className="text-sm text-gray-400">Job not found.</p>;
   }
 
-  const cv = session?.email ? profileApi.get(session.email)?.skillsAndDocuments?.cv : null;
-
+ const resumeUrl = session?.email ? profileApi.get(session.email)?.skillsAndDocuments?.resumeUrl : null;
   function handleConfirmApply() {
     if (!session?.email || !job) return;
     applicationsApi.apply(
       session.email,
       { id: job.id, title: job.title, company: job.company, location: job.location },
-      cv?.fileName,
-      job.employerEmail // only set for real employer-posted jobs — enables exact matching on their dashboard
+      resumeUrl ?? undefined,
+      job.employerEmail, // only set for real employer-posted jobs — enables exact matching on their dashboard
     );
     setApplied(true);
     setShowConfirm(false);
@@ -191,17 +190,17 @@ const jobId = params?.id;
               You&apos;re applying to <span className="font-medium text-gray-900">{job.title}</span> at {job.company}.
             </p>
 
-            {cv ? (
-              <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F5F3FA] px-4 py-3 text-sm text-gray-700">
-                <FileText size={16} className="text-[#8A38F5]" />
-                Using your saved CV: <span className="font-medium">{cv.fileName}</span>
-              </div>
-            ) : (
-              <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                No CV uploaded yet. You can still apply, but adding one to your profile first is recommended.
-              </div>
-            )}
+            {resumeUrl ? (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F5F3FA] px-4 py-3 text-sm text-gray-700">
+              <FileText size={16} className="shrink-0 text-[#8A38F5]" />
+              <span className="truncate">Using your saved resume link</span>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              No resume link added yet. You can still apply, but adding one to your profile first is recommended.
+            </div>
+          )}
 
             <div className="mt-5 flex gap-3">
               <button type="button" onClick={() => setShowConfirm(false)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50">

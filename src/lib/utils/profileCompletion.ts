@@ -25,8 +25,8 @@ export function getProfileCompletion(data: CandidateProfileData | null) {
     },
     {
       id: "cv",
-      label: "Upload CV",
-      done: Boolean(data?.skillsAndDocuments?.cv),
+      label: "Add resume link",
+      done: Boolean(data?.skillsAndDocuments?.resumeUrl?.trim()),
     },
   ];
 
