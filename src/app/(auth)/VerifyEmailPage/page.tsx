@@ -1,12 +1,15 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams,  useRouter} from "next/navigation";
 import { realAuthApi } from "@/lib/api/client";
+import Link from "next/link";
 
 export function VerifyEmailPage() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const searchParams= useSearchParams();
+  const router = useRouter();
   
-  const token = searchParams.get("token");
+  const token = searchParams?.get("token");
   
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -23,7 +26,7 @@ export function VerifyEmailPage() {
       if (result.ok) {
         setStatus("success");
         // Automatically redirect to login page after 3 seconds
-        setTimeout(() => navigate("/login"), 3000);
+        setTimeout(() => router.push("/login"), 3000);
       } else {
         setStatus("error");
         setErrorMessage(result.message || "Verification failed or token expired.");
@@ -31,7 +34,7 @@ export function VerifyEmailPage() {
     }
 
     verify();
-  }, [token, navigate]);
+  }, [token, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
@@ -41,7 +44,7 @@ export function VerifyEmailPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-green-600">Email Verified!</h2>
           <p className="mt-2">Your email has been successfully verified. Redirecting to login...</p>
-          <Link to="/login" className="mt-4 inline-block text-blue-600 underline">
+          <Link href="/login" className="mt-4 inline-block text-blue-600 underline">
             Click here if you are not redirected
           </Link>
         </div>
@@ -51,7 +54,7 @@ export function VerifyEmailPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600">Verification Failed</h2>
           <p className="mt-2 text-gray-600">{errorMessage}</p>
-          <Link to="/login" className="mt-4 inline-block text-blue-600 underline">
+          <Link href="/login" className="mt-4 inline-block text-blue-600 underline">
             Back to Login
           </Link>
         </div>
