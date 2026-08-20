@@ -83,7 +83,7 @@ const ContactPage: React.FC = () => {
               Get in <span className="font-semibold text-[#8c52ff]">Touch</span>
             </h1>
             <p className="text-black/50 text-lg md:text-xl max-w-2xl mx-auto tracking-wide">
-              Have a question or a project in mind? We'd love to hear from you.
+              Have a question in mind? We'd love to hear from you.
             </p>
           </motion.div>
         </div>

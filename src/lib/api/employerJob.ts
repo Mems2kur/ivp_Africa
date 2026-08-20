@@ -1,3 +1,5 @@
+import { apiFetch } from "./httpClient";
+
 export type EmployerJobStatus = "active" | "draft" | "closed";
 
 export interface EmployerJob {
@@ -7,85 +9,103 @@ export interface EmployerJob {
   workMode: string;
   department: string;
   description: string;
-  minSalary: string;
-  maxSalary: string;
+  qualification?: string;
+  minSalary: string | number;
+  maxSalary: string | number;
   deadline: string;
   skills: string[];
   applicants: number;
   status: EmployerJobStatus;
-  postedOn: string; // ISO date
+  postedOn: string;
 }
 
-const PREFIX = "ivp_employer_jobs_";
-
-function keyFor(email: string) {
-  return PREFIX + email.toLowerCase();
+export interface CreateBackendJobPayload {
+  title: string;
+  description: string;
+  location: string;
+  employmentType: string;
+  qualification: string;
+  deadline: string;
+  department: string;
+  minSalary?: number;
+  maxSalary?: number;
+  requiredSkills: string[];
+  status?: "PUBLISHED" | "DRAFT";
 }
 
-function readJobs(email: string): EmployerJob[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(keyFor(email)) ?? "[]");
-  } catch {
-    return [];
-  }
-}
+// Helper to translate backend job entity to frontend shape
+function mapBackendJobToEmployerJob(raw: any): EmployerJob {
+  let mappedStatus: EmployerJobStatus = "active";
+  if (raw.status === "DRAFT") mappedStatus = "draft";
+  if (raw.status === "CLOSED") mappedStatus = "closed";
 
-function writeJobs(email: string, jobs: EmployerJob[]) {
-  localStorage.setItem(keyFor(email), JSON.stringify(jobs));
-}
-
-function seedJobs(): EmployerJob[] {
-  return [
-    { id: crypto.randomUUID(), title: "Senior Product Designer", location: "Lagos, Nigeria", workMode: "Remote", department: "Product", description: "", minSalary: "", maxSalary: "", deadline: "", skills: [], applicants: 45, status: "active", postedOn: "2024-05-26" },
-    { id: crypto.randomUUID(), title: "Backend Engineer (Node.js)", location: "Accra, Ghana", workMode: "Full-time", department: "Engineering", description: "", minSalary: "", maxSalary: "", deadline: "", skills: [], applicants: 38, status: "active", postedOn: "2024-05-15" },
-    { id: crypto.randomUUID(), title: "UI/UX Researcher", location: "Nairobi, Kenya", workMode: "Remote", department: "Product", description: "", minSalary: "", maxSalary: "", deadline: "", skills: [], applicants: 27, status: "active", postedOn: "2024-05-10" },
-    { id: crypto.randomUUID(), title: "Data Analyst", location: "Cape Town, SA", workMode: "Hybrid", department: "Analytics", description: "", minSalary: "", maxSalary: "", deadline: "", skills: [], applicants: 19, status: "draft", postedOn: "2024-05-08" },
-    { id: crypto.randomUUID(), title: "Personal Assistant", location: "Cairo, Egypt", workMode: "Full-time", department: "Admin", description: "", minSalary: "", maxSalary: "", deadline: "", skills: [], applicants: 12, status: "closed", postedOn: "2024-04-28" },
-    { id: crypto.randomUUID(), title: "DevOps Engineer", location: "Lagos, Nigeria", workMode: "Remote", department: "Engineering", description: "", minSalary: "", maxSalary: "", deadline: "", skills: [], applicants: 31, status: "active", postedOn: "2024-04-20" },
-  ];
+  return {
+    id: raw.id,
+    title: raw.title,
+    location: raw.location,
+    workMode: raw.employmentType || "Full-Time",
+    department: raw.department || "General",
+    description: raw.description || "",
+    qualification: raw.qualification || "",
+    minSalary: raw.minSalary ?? "",
+    maxSalary: raw.maxSalary ?? "",
+    deadline: raw.deadline ? new Date(raw.deadline).toISOString().split("T")[0] : "",
+    skills: raw.requiredSkills || [],
+    applicants: raw._count?.applications ?? 0,
+    status: mappedStatus,
+    postedOn: raw.createdAt ? new Date(raw.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+  };
 }
 
 export const employerJobsApi = {
-  getAll(email: string): EmployerJob[] {
-    const existing = readJobs(email);
-    if (existing.length > 0) return existing;
-    const seeded = seedJobs();
-    writeJobs(email, seeded);
-    return seeded;
+  async getAll(): Promise<{ ok: boolean; data?: EmployerJob[]; message?: string }> {
+    const res = await apiFetch<any[]>("/api/v1/jobs/my-jobs", { method: "GET" });
+    if (!res.ok || !res.data) {
+      return { ok: false, message: res.message || "Failed to fetch jobs" };
+    }
+    return { ok: true, data: res.data.map(mapBackendJobToEmployerJob) };
   },
 
-  getById(email: string, jobId: string): EmployerJob | null {
-    const jobs = readJobs(email);
-    return jobs.find((j) => j.id === jobId) ?? null;
+  async getById(id: string): Promise<{ ok: boolean; data?: EmployerJob; message?: string }> {
+    const res = await apiFetch<any>(`/api/v1/jobs/${id}`, { method: "GET" });
+    if (!res.ok || !res.data) {
+      return { ok: false, message: res.message || "Job not found" };
+    }
+    return { ok: true, data: mapBackendJobToEmployerJob(res.data) };
   },
 
-  create(email: string, job: Omit<EmployerJob, "id" | "postedOn" | "applicants">): EmployerJob {
-    const jobs = readJobs(email);
-    const newJob: EmployerJob = {
-      ...job,
-      id: crypto.randomUUID(),
-      applicants: 0,
-      postedOn: new Date().toISOString().slice(0, 10),
-    };
-    writeJobs(email, [newJob, ...jobs]);
-    return newJob;
+  async create(payload: CreateBackendJobPayload): Promise<{ ok: boolean; data?: EmployerJob; message?: string }> {
+    const res = await apiFetch<any>("/api/v1/jobs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok || !res.data) {
+      return { ok: false, message: res.message || "Failed to create job posting" };
+    }
+
+    return { ok: true, data: mapBackendJobToEmployerJob(res.data) };
   },
 
-  setStatus(email: string, jobId: string, status: EmployerJobStatus) {
-    const jobs = readJobs(email);
-    const updated = jobs.map((j) => (j.id === jobId ? { ...j, status } : j));
-    writeJobs(email, updated);
+  async update(id: string, payload: Partial<CreateBackendJobPayload>): Promise<{ ok: boolean; message?: string }> {
+    const res = await apiFetch<any>(`/api/v1/jobs/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    return { ok: res.ok, message: res.message };
   },
 
-  remove(email: string, jobId: string) {
-    const jobs = readJobs(email);
-    writeJobs(email, jobs.filter((j) => j.id !== jobId));
+  async setStatus(id: string, status: EmployerJobStatus): Promise<{ ok: boolean; message?: string }> {
+    const backendStatus = status === "active" ? "PUBLISHED" : status === "draft" ? "DRAFT" : "CLOSED";
+    const res = await apiFetch<any>(`/api/v1/jobs/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: backendStatus }),
+    });
+    return { ok: res.ok, message: res.message };
   },
 
-  update(email: string, jobId: string, updates: Partial<Omit<EmployerJob, "id" | "postedOn">>) {
-    const jobs = readJobs(email);
-    const updated = jobs.map((j) => (j.id === jobId ? { ...j, ...updates } : j));
-    writeJobs(email, updated);
+  async remove(id: string): Promise<{ ok: boolean; message?: string }> {
+    const res = await apiFetch<any>(`/api/v1/jobs/${id}`, { method: "DELETE" });
+    return { ok: res.ok, message: res.message };
   },
 };

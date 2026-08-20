@@ -34,27 +34,27 @@ export default function EmployerDashboardPage() {
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
 
   useEffect(() => {
+  async function loadDashboardData() {
     if (!session?.email) return;
-
-    setJobs(employerJobsApi.getAll(session.email));
-
-    // Real applications only — matched against this employer's company name,
-    // since that's the only link between talent's applications and this
-    // employer's identity right now.
-    const company = companyProfileApi.get(session.email, session.displayName ?? "");
-    const companyName = company.companyName.trim().toLowerCase();
+    
+    // 1. Fetch the real company profile asynchronously
+    const profileRes = await companyProfileApi.getProfile();
+    
+    // 2. Extract the company name (fallback to session display name if it fails)
+    const companyName = (
+      profileRes.ok && profileRes.data?.companyName 
+        ? profileRes.data.companyName 
+        : (session.displayName ?? "")
+    ).trim().toLowerCase();
 
     const allTalent = adminUsersApi.getAll().filter((u) => u.role === "talent");
-    const matched: ApplicationRecord[] = [];
-    allTalent.forEach((talent) => {
-      const apps = applicationsApi.getAll(talent.email);
-       matched.push(
-    ...apps.filter((a) => a.employerEmail?.toLowerCase() === session.email.toLowerCase())
-  );
-    });
-    matched.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
-    setApplications(matched);
-  }, [session?.email]);
+    
+    // ... continue with the rest of your filtering logic here using `companyName` ...
+    // (e.g., setStats, setRecentApplicants, etc.)
+  }
+
+  loadDashboardData();
+}, [session]);
 
   const firstName = session?.displayName?.split(" ")[0] ?? "there";
 

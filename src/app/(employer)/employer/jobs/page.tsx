@@ -3,11 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, MoreVertical } from "lucide-react";
-import { useSession } from "@/lib/auth/useSession";
 import { employerJobsApi, EmployerJob, EmployerJobStatus } from "@/lib/api/employerJob";
-import { adminUsersApi } from "@/lib/api/adminUsers";
-import { applicationsApi } from "@/lib/api/applications";
-import type { ApplicationRecord } from "@/lib/types/application";
+
 type TabValue = "all" | EmployerJobStatus;
 
 const tabs: { value: TabValue; label: string }[] = [
@@ -35,7 +32,6 @@ const avatarPalette = [
   { bg: "bg-emerald-100", text: "text-emerald-600" },
   { bg: "bg-amber-100", text: "text-amber-600" },
   { bg: "bg-rose-100", text: "text-rose-600" },
-  { bg: "bg-violet-100", text: "text-violet-600" },
 ];
 
 function getInitials(title: string) {
@@ -43,31 +39,28 @@ function getInitials(title: string) {
 }
 
 function formatDate(iso: string) {
+  if (!iso) return "N/A";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function EmployerJobsPage() {
-  const { session } = useSession();
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [applications, setApplications] = useState<ApplicationRecord[]>([]);
 
-  function refresh() {
-    if (!session?.email) return;
-    setJobs(employerJobsApi.getAll(session.email));
-     const allTalent = adminUsersApi.getAll().filter((u) => u.role === "talent");
-  const matched: ApplicationRecord[] = [];
-  allTalent.forEach((talent) => {
-    const apps = applicationsApi.getAll(talent.email);
-    matched.push(...apps.filter((a) => a.employerEmail?.toLowerCase() === session.email.toLowerCase()));
-  });
-  setApplications(matched);
+  async function refresh() {
+    setLoading(true);
+    const res = await employerJobsApi.getAll();
+    if (res.ok && res.data) {
+      setJobs(res.data);
+    }
+    setLoading(false);
   }
 
   useEffect(() => {
     refresh();
-  }, [session?.email]);
+  }, []);
 
   const counts = useMemo(() => {
     return {
@@ -83,35 +76,35 @@ export default function EmployerJobsPage() {
     return jobs.filter((j) => j.status === activeTab);
   }, [jobs, activeTab]);
 
-  function handleSetStatus(jobId: string, status: EmployerJobStatus) {
-    if (!session?.email) return;
-    employerJobsApi.setStatus(session.email, jobId, status);
+  async function handleSetStatus(jobId: string, status: EmployerJobStatus) {
+    await employerJobsApi.setStatus(jobId, status);
     setOpenMenuId(null);
     refresh();
   }
 
-  function handleDelete(jobId: string) {
-    if (!session?.email) return;
-    employerJobsApi.remove(session.email, jobId);
+  async function handleDelete(jobId: string) {
+    await employerJobsApi.remove(jobId);
     setOpenMenuId(null);
     refresh();
   }
 
-  return (
+ return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">Job Postings</h1>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">
+          Job Postings
+        </h1>
+        
         <Link
           href="/employer/jobs/new"
-          className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#8A38F5] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#7226e0] sm:self-start sm:px-4 sm:py-2.5 sm:text-sm"
+          className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#8A38F5] px-4 py-2 text-xs font-semibold text-black transition-colors hover:bg-[#7226e0] sm:self-start sm:px-4 sm:py-2.5 sm:text-sm"
         >
-          <Plus size={15} className="sm:size-4" />
+          <Plus size={15} />
           Post a Job
         </Link>
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white">
-        {/* Tabs */}
         <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-3 sm:gap-2 sm:px-5">
           {tabs.map((tab) => (
             <button
@@ -126,7 +119,7 @@ export default function EmployerJobsPage() {
             >
               {tab.label}
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold sm:text-[11px] ${
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                   activeTab === tab.value ? "bg-[#8A38F5] text-white" : "bg-gray-100 text-gray-500"
                 }`}
               >
@@ -136,108 +129,109 @@ export default function EmployerJobsPage() {
           ))}
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="px-4 py-3 text-[10px] font-semibold tracking-wide text-gray-400 uppercase sm:px-5 sm:text-xs">Role</th>
-                <th className="hidden px-4 py-3 text-[10px] font-semibold tracking-wide text-gray-400 uppercase md:table-cell sm:text-xs">Department</th>
-                <th className="px-4 py-3 text-center text-[10px] font-semibold tracking-wide text-gray-400 uppercase sm:text-xs">Applicants</th>
-                <th className="px-4 py-3 text-[10px] font-semibold tracking-wide text-gray-400 uppercase sm:text-xs">Status</th>
-                <th className="hidden px-4 py-3 text-[10px] font-semibold tracking-wide text-gray-400 uppercase lg:table-cell sm:text-xs">Posted on</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wide text-gray-400 uppercase sm:px-5 sm:text-xs">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredJobs.map((job, i) => {
-                const applicantCount = applications.filter((a) => a.jobId === job.id).length;
-                const palette = avatarPalette[i % avatarPalette.length]
-                return (
-                  <tr key={job.id} className="transition-colors hover:bg-gray-50">
-                    <td className="px-4 py-4 sm:px-5">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${palette.bg} ${palette.text}`}>
-                          {getInitials(job.title)}
+          {loading ? (
+            <div className="p-8 text-center text-sm text-gray-400">Loading job postings...</div>
+          ) : (
+            <table className="w-full min-w-[640px] text-left">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase sm:px-5 sm:text-xs">Role</th>
+                  <th className="hidden px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase md:table-cell sm:text-xs">Department</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold text-gray-400 uppercase sm:text-xs">Applicants</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase sm:text-xs">Status</th>
+                  <th className="hidden px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase lg:table-cell sm:text-xs">Posted on</th>
+                  <th className="px-4 py-3 text-right text-[10px] font-semibold text-gray-400 uppercase sm:px-5 sm:text-xs">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredJobs.map((job, i) => {
+                  const palette = avatarPalette[i % avatarPalette.length];
+                  return (
+                    <tr key={job.id} className="transition-colors hover:bg-gray-50">
+                      <td className="px-4 py-4 sm:px-5">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${palette.bg} ${palette.text}`}>
+                            {getInitials(job.title)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-gray-900">{job.title}</p>
+                            <p className="truncate text-xs text-gray-400">
+                              {job.location} · {job.workMode}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-gray-900">{job.title}</p>
-                          <p className="truncate text-xs text-gray-400">
-                            {job.location} · {job.workMode}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-4 text-sm text-gray-600 md:table-cell">{job.department}</td>
-                    <td className="px-4 py-4 text-center text-sm font-semibold text-gray-900">{applicantCount}</td>
-                    <td className="px-4 py-4">
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs ${statusStyles[job.status]}`}>
-                        {statusLabels[job.status]}
-                      </span>
-                    </td>
-                    <td className="hidden px-4 py-4 text-sm text-gray-400 lg:table-cell">{formatDate(job.postedOn)}</td>
-                    <td className="relative px-4 py-4 text-right sm:px-5">
-                      <button
-                        type="button"
-                        onClick={() => setOpenMenuId(openMenuId === job.id ? null : job.id)}
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                        aria-label="Job actions"
-                      >
-                        <MoreVertical size={16} />
-                      </button>
-                {openMenuId === job.id && (
-                <>
-                    <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                    <div className="absolute right-4 z-20 mt-1 w-40 rounded-xl border border-gray-100 bg-white py-1 text-left shadow-lg sm:right-5">
-                        <Link
-                        href={`/employer/jobs/new?id=${job.id}`}
-                        onClick={() => setOpenMenuId(null)}
-                        className="block w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
-                        >
-                        Edit
-                        </Link>
-                    {job.status !== "active" && (
+                      </td>
+                      <td className="hidden px-4 py-4 text-sm text-gray-600 md:table-cell">{job.department}</td>
+                      <td className="px-4 py-4 text-center text-sm font-semibold text-gray-900">{job.applicants}</td>
+                      <td className="px-4 py-4">
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${statusStyles[job.status]}`}>
+                          {statusLabels[job.status]}
+                        </span>
+                      </td>
+                      <td className="hidden px-4 py-4 text-sm text-gray-400 lg:table-cell">{formatDate(job.postedOn)}</td>
+                      <td className="relative px-4 py-4 text-right sm:px-5">
                         <button
-                        type="button"
-                        onClick={() => handleSetStatus(job.id, "active")}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                          type="button"
+                          onClick={() => setOpenMenuId(openMenuId === job.id ? null : job.id)}
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                         >
-                        Mark Active
+                          <MoreVertical size={16} />
                         </button>
-                    )}
-                    {job.status !== "closed" && (
-                        <button
-                        type="button"
-                        onClick={() => handleSetStatus(job.id, "closed")}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
-                        >
-                        Close job
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => handleDelete(job.id)}
-                        className="w-full px-3 py-2 text-left text-xs text-red-500 hover:bg-red-50"
-                    >
-                        Delete
-                    </button>
-                    </div>
-                </>
-                )}
+                        {openMenuId === job.id && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                            <div className="absolute right-4 z-20 mt-1 w-40 rounded-xl border border-gray-100 bg-white py-1 text-left shadow-lg sm:right-5">
+                              <Link
+                                href={`/employer/jobs/new?id=${job.id}`}
+                                onClick={() => setOpenMenuId(null)}
+                                className="block w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                              >
+                                Edit
+                              </Link>
+                              {job.status !== "active" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetStatus(job.id, "active")}
+                                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                                >
+                                  Mark Active
+                                </button>
+                              )}
+                              {job.status !== "closed" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetStatus(job.id, "closed")}
+                                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                                >
+                                  Close Job
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(job.id)}
+                                className="w-full px-3 py-2 text-left text-xs text-red-500 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredJobs.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-400">
+                      No jobs found in this category.
                     </td>
                   </tr>
-                );
-              })}
-
-              {filteredJobs.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-400">
-                    No jobs in this category yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>

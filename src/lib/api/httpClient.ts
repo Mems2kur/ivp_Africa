@@ -1,5 +1,12 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
+// Retrieves the stored access token for authenticated API requests
+function getAuthHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("access_token"); // Ensure this matches your token key name
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
@@ -7,7 +14,11 @@ export async function apiFetch<T>(
   try {
     const response = await fetch(`${BASE_URL}${path}`, {
       ...options,
-      headers: { "Content-Type": "application/json", ...options.headers },
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+        ...options.headers,
+      },
     });
     const data = await response.json().catch(() => null);
     if (!response.ok) {
@@ -28,8 +39,11 @@ export async function apiFetchMultipart<T>(
 ): Promise<{ ok: true; data: T } | { ok: false; message: string }> {
   try {
     const response = await fetch(`${BASE_URL}${path}`, {
-      method: options.method ?? "PUT",
-      headers: options.headers, // no Content-Type here — must stay unset for multipart
+      method: options.method ?? "PATCH",
+      headers: {
+        ...getAuthHeader(),
+        ...options.headers,
+      }, // no Content-Type here — must stay unset for multipart
       body: formData,
     });
     const data = await response.json().catch(() => null);

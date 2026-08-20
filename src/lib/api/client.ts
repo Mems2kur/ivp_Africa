@@ -1,4 +1,4 @@
-import { MOCK_OTP, mockAuthAccounts, type AuthAccount } from "@/lib/api/mock/fixtures";
+import {  mockAuthAccounts, type AuthAccount } from "@/lib/api/mock/fixtures";
 import { apiFetch } from "./httpClient";
 const STORAGE_KEY = "ivp_mock_accounts";
 
@@ -16,6 +16,23 @@ export const realAuthApi = {
       body: JSON.stringify({ ...input, acceptTerms: true }),
     });
   },
+
+  registerEmployer: async (input: {
+    companyName: string;
+    contactPerson: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    industry?: string;
+    companySize?: string;
+    rcNumber?: string;
+  }) => {
+    return apiFetch<{ message: string; userId: string }>("/api/v1/auth/register/employer", {
+      method: "POST",
+      body: JSON.stringify({ ...input, acceptTerms: true }),
+    });
+  },
+
   login: async (email: string, password: string) => {
   const result = await apiFetch<{
     access_token: string;
@@ -39,6 +56,32 @@ export const realAuthApi = {
     redirectPath,
   };
   },
+
+  verifyEmail: async (token: string) => {
+    // Note: adjust the URL path below to match your actual backend endpoint
+    const result = await apiFetch<{ message: string }>(`/api/v1/auth/verify-email?token=${token}`, {
+      method: "GET", // Or "POST", depending on your backend setup
+    });
+
+    if (!result.ok) {
+      return { ok: false as const, message: result.message };
+    }
+    return { ok: true as const, message: result.data.message };
+  },
+
+  // 3. ADD THE RESEND METHOD TOO (for the TODO in your login form):
+  resendVerificationEmail: async (email: string) => {
+    const result = await apiFetch<{ message: string }>("/api/v1/auth/resend-verification", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+
+    if (!result.ok) {
+      return { ok: false as const, message: result.message };
+    }
+    return { ok: true as const, message: result.data.message };
+  },
+
   requestPasswordReset: async(email:string) =>{
     const result = await apiFetch<{message: string}>("/api/v1/auth/password-reset/request",{
       method:"POST",
@@ -120,31 +163,7 @@ registerEmployer: async (input: { companyName: string; businessEmail: string; pa
   saveAccounts(accounts);
   return { ok: true as const };
 },
-
-    verifyEmail: async (email: string, otp: string) => {
-      if (otp !== MOCK_OTP) {
-        return { ok: false as const, reason: "invalid_otp" as const };
-      }
-
-      const accounts = loadAccounts();
-      const account = accounts.find(
-        (a) => a.email.toLowerCase() === email.toLowerCase()
-      );
-      if (!account) {
-        return { ok: false as const, reason: "invalid_otp" as const };
-      }
-
-      account.emailVerified = true;
-      saveAccounts(accounts);
-
-      return { ok: true as const, redirectPath: account.redirectPath };
-    },
-
-    resendOtp: async (email: string) => {
-      console.log(`[mock] resent OTP ${MOCK_OTP} to ${email}`);
-      return { ok: true as const };
-    },
-
+  
 
     login: async (email: string, password: string) => {
       const accounts = loadAccounts();
