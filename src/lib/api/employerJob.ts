@@ -60,16 +60,23 @@ function mapBackendJobToEmployerJob(raw: any): EmployerJob {
 export const employerJobsApi = {
   async getAll(): Promise<{ ok: boolean; data?: EmployerJob[]; message?: string }> {
     const res = await apiFetch<any[]>("/api/v1/jobs/my-jobs", { method: "GET" });
-    if (!res.ok || !res.data) {
-      return { ok: false, message: res.message || "Failed to fetch jobs" };
-    }
-    return { ok: true, data: res.data.map(mapBackendJobToEmployerJob) };
+    if (!res.ok) {
+    return { ok: false, message: res.message || "Failed to fetch jobs" };
+  }
+  if (!res.data) {
+    return { ok: false, message: "Failed to fetch jobs" };
+  }
+  return { ok: true, data: res.data.map(mapBackendJobToEmployerJob) };
+   
   },
 
   async getById(id: string): Promise<{ ok: boolean; data?: EmployerJob; message?: string }> {
     const res = await apiFetch<any>(`/api/v1/jobs/${id}`, { method: "GET" });
-    if (!res.ok || !res.data) {
+    if (!res.ok ) {
       return { ok: false, message: res.message || "Job not found" };
+    }
+    if(!res.data){
+      return { ok: false, message: "Job not found" };
     }
     return { ok: true, data: mapBackendJobToEmployerJob(res.data) };
   },
@@ -80,32 +87,42 @@ export const employerJobsApi = {
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok || !res.data) {
+    if (!res.ok ) {
       return { ok: false, message: res.message || "Failed to create job posting" };
     }
-
+    if (!res.data) {
+      return { ok: false, message: "Failed to create job posting" };
+    }
     return { ok: true, data: mapBackendJobToEmployerJob(res.data) };
   },
 
   async update(id: string, payload: Partial<CreateBackendJobPayload>): Promise<{ ok: boolean; message?: string }> {
-    const res = await apiFetch<any>(`/api/v1/jobs/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
-    return { ok: res.ok, message: res.message };
-  },
+  const res = await apiFetch<any>(`/api/v1/jobs/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    return { ok: false, message: res.message };
+  }
+  return { ok: true };
+},
 
-  async setStatus(id: string, status: EmployerJobStatus): Promise<{ ok: boolean; message?: string }> {
-    const backendStatus = status === "active" ? "PUBLISHED" : status === "draft" ? "DRAFT" : "CLOSED";
-    const res = await apiFetch<any>(`/api/v1/jobs/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: backendStatus }),
-    });
-    return { ok: res.ok, message: res.message };
-  },
-
+async setStatus(id: string, status: EmployerJobStatus): Promise<{ ok: boolean; message?: string }> {
+  const backendStatus = status === "active" ? "PUBLISHED" : status === "draft" ? "DRAFT" : "CLOSED";
+  const res = await apiFetch<any>(`/api/v1/jobs/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: backendStatus }),
+  });
+  if (!res.ok) {
+    return { ok: false, message: res.message };
+  }
+  return { ok: true };
+},
   async remove(id: string): Promise<{ ok: boolean; message?: string }> {
     const res = await apiFetch<any>(`/api/v1/jobs/${id}`, { method: "DELETE" });
-    return { ok: res.ok, message: res.message };
+    if (!res.ok) {
+    return { ok: false, message: res.message };
+  }
+   return { ok: true };
   },
 };
