@@ -3,16 +3,14 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { X } from "lucide-react";
-import { useSession } from "@/lib/auth/useSession";
-import { employerJobsApi } from "@/lib/api/employerJob";
+import { X, AlertCircle } from "lucide-react";
+import { employerJobsApi, CreateBackendJobPayload } from "@/lib/api/employerJob";
 
 const inputClass =
   "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-[#8A38F5] sm:py-3";
 const labelClass = "mb-1.5 block text-xs font-semibold text-gray-900 sm:text-sm";
 
 function PostJobContent() {
-  const { session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams?.get("id");
@@ -20,12 +18,13 @@ function PostJobContent() {
 
   const [title, setTitle] = useState("");
   const [department, setDepartment] = useState("");
+  const [qualification, setQualification] = useState("");
   const [description, setDescription] = useState("");
   const [minSalary, setMinSalary] = useState("");
   const [maxSalary, setMaxSalary] = useState("");
   const [location, setLocation] = useState("");
   const [deadline, setDeadline] = useState("");
-  const [employmentType, setEmploymentType] = useState("");
+  const [employmentType, setEmploymentType] = useState("Full-Time");
   const [skills, setSkills] = useState<string[]>([]);
   const [skillDraft, setSkillDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,23 +33,30 @@ function PostJobContent() {
   const [loaded, setLoaded] = useState(!isEditMode);
 
   useEffect(() => {
-    if (!isEditMode || !session?.email || !editId) return;
-    const job = employerJobsApi.getById(session.email, editId);
-    if (!job) {
-      setNotFound(true);
-      return;
+    if (!isEditMode || !editId) return;
+
+    async function loadJob() {
+      const res = await employerJobsApi.getById(editId!);
+      if (!res.ok || !res.data) {
+        setNotFound(true);
+        return;
+      }
+      const job = res.data;
+      setTitle(job.title);
+      setDepartment(job.department);
+      setQualification(job.qualification || "");
+      setDescription(job.description || "");
+      setMinSalary(job.minSalary ? String(job.minSalary) : "");
+      setMaxSalary(job.maxSalary ? String(job.maxSalary) : "");
+      setLocation(job.location);
+      setDeadline(job.deadline || "");
+      setEmploymentType(job.workMode);
+      setSkills(job.skills || []);
+      setLoaded(true);
     }
-    setTitle(job.title);
-    setDepartment(job.department);
-    setDescription(job.description ?? "");
-    setMinSalary(job.minSalary ?? "");
-    setMaxSalary(job.maxSalary ?? "");
-    setLocation(job.location);
-    setDeadline(job.deadline ?? "");
-    setEmploymentType(job.workMode);
-    setSkills(job.skills ?? []);
-    setLoaded(true);
-  }, [isEditMode, session?.email, editId]);
+
+    loadJob();
+  }, [isEditMode, editId]);
 
   function handleAddSkill(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && skillDraft.trim()) {
@@ -66,42 +72,68 @@ function PostJobContent() {
     setSkills(skills.filter((s) => s !== skill));
   }
 
-  async function handleSubmit(status?: "active" | "draft") {
-    if (!session?.email) return;
+  async function handleSubmit(targetStatus: "PUBLISHED" | "DRAFT" = "PUBLISHED") {
     setError(null);
 
-    if (!title.trim() || !location.trim()) {
-      setError("Job title and location are required.");
+    if (!title.trim() || !department.trim() || !location.trim() || !description.trim()) {
+      setError("Job title, department, location, and description are required.");
+      return;
+    }
+
+    if (!qualification.trim()) {
+      setError("Please specify the required qualification or experience.");
+      return;
+    }
+
+    if (skills.length === 0) {
+      setError("Please add at least one required skill.");
+      return;
+    }
+
+    if (!deadline) {
+      setError("Application deadline is required.");
       return;
     }
 
     setSaving(true);
 
-    const payload = {
+    const parsedMin = minSalary ? Number(minSalary.replace(/[^0-9.]/g, "")) : undefined;
+    const parsedMax = maxSalary ? Number(maxSalary.replace(/[^0-9.]/g, "")) : undefined;
+    const formattedDeadline = new Date(`${deadline}T23:59:59Z`).toISOString();
+
+    const payload: CreateBackendJobPayload = {
       title: title.trim(),
-      department: department.trim() || "General",
+      department: department.trim(),
       description: description.trim(),
-      minSalary: minSalary.trim(),
-      maxSalary: maxSalary.trim(),
+      qualification: qualification.trim(),
       location: location.trim(),
-      deadline: deadline.trim(),
-      workMode: employmentType.trim() || "Full-time",
-      skills,
+      employmentType: employmentType.trim() || "Full-Time",
+      deadline: formattedDeadline,
+      requiredSkills: skills,
+      minSalary: parsedMin,
+      maxSalary: parsedMax,
+      status: targetStatus,
     };
 
+    let res;
     if (isEditMode && editId) {
-      employerJobsApi.update(session.email, editId, payload);
+      res = await employerJobsApi.update(editId, payload);
     } else {
-      employerJobsApi.create(session.email, { ...payload, status: status ?? "active" });
+      res = await employerJobsApi.create(payload);
     }
 
     setSaving(false);
-    router.push("/employer/jobs");
+
+    if (res.ok) {
+      router.push("/employer/jobs");
+    } else {
+      setError(res.message || "Failed to submit job. Please check all fields.");
+    }
   }
 
   if (notFound) {
     return (
-      <div>
+      <div className="p-6">
         <Link href="/employer/jobs" className="text-sm text-gray-500 hover:text-gray-700">
           ← Back to Job Postings
         </Link>
@@ -110,7 +142,7 @@ function PostJobContent() {
     );
   }
 
-  if (!loaded) return null;
+  if (!loaded) return <div className="p-6 text-sm text-gray-500">Loading job details...</div>;
 
   return (
     <>
@@ -118,90 +150,104 @@ function PostJobContent() {
         <p className="text-xs text-gray-400 sm:text-sm">
           <Link href="/employer/jobs" className="hover:text-gray-600">Job Postings</Link>
           {" > "}
-          <span className="font-semibold text-[#8A38F5]">Post a Job</span>
+          <span className="font-semibold text-[#8A38F5]">
+            {isEditMode ? "Edit Job" : "Post a Job"}
+          </span>
         </p>
         <h1 className="mt-1 text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">
-          Post a New Job
+          {isEditMode ? "Edit Job Posting" : "Post a New Job"}
         </h1>
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 md:p-8">
         {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
+          <div className="mb-6 flex items-center gap-2 rounded-xl bg-red-50 p-4 text-sm text-red-600 border border-red-200">
+            <AlertCircle size={18} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
           <div>
-            <label className={labelClass}>Job Title</label>
+            <label className={labelClass}>Job Title *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Senior Frontend Engineer"
+              placeholder="e.g. Senior Backend Engineer"
               className={inputClass}
             />
           </div>
 
           <div>
-            <label className={labelClass}>Department/Category</label>
+            <label className={labelClass}>Department / Category *</label>
             <input
               type="text"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              placeholder="e.g. Engineering / Product"
+              placeholder="e.g. Engineering"
               className={inputClass}
             />
           </div>
 
-          <div className="md:row-span-2">
-            <label className={labelClass}>Job Description</label>
+          <div className="md:col-span-2">
+            <label className={labelClass}>Qualification / Experience Required *</label>
+            <input
+              type="text"
+              value={qualification}
+              onChange={(e) => setQualification(e.target.value)}
+              placeholder="e.g. Bachelor's degree in Computer Science or equivalent experience"
+              className={inputClass}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className={labelClass}>Job Description *</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detail job responsibilities and ideal background criteria..."
-              rows={6}
+              placeholder="Detail job responsibilities, role expectations, and prerequisites..."
+              rows={5}
               className={`${inputClass} resize-none`}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Min Salary</label>
+              <label className={labelClass}>Min Salary (Optional)</label>
               <input
-                type="text"
+                type="number"
                 value={minSalary}
                 onChange={(e) => setMinSalary(e.target.value)}
-                placeholder="$ Min"
+                placeholder="500000"
                 className={inputClass}
               />
             </div>
             <div>
-              <label className={labelClass}>Max Salary</label>
+              <label className={labelClass}>Max Salary (Optional)</label>
               <input
-                type="text"
+                type="number"
                 value={maxSalary}
                 onChange={(e) => setMaxSalary(e.target.value)}
-                placeholder="$ Max"
+                placeholder="800000"
                 className={inputClass}
               />
             </div>
           </div>
 
           <div>
-            <label className={labelClass}>Location</label>
+            <label className={labelClass}>Location *</label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Lagos, Nigeria / Remote"
+              placeholder="e.g. Lagos, Nigeria (Hybrid)"
               className={inputClass}
             />
           </div>
 
           <div>
-            <label className={labelClass}>Application Deadline</label>
+            <label className={labelClass}>Application Deadline *</label>
             <input
               type="date"
               value={deadline}
@@ -211,19 +257,22 @@ function PostJobContent() {
           </div>
 
           <div>
-            <label className={labelClass}>Employment Type</label>
-            <input
-              type="text"
+            <label className={labelClass}>Employment Type *</label>
+            <select
               value={employmentType}
               onChange={(e) => setEmploymentType(e.target.value)}
-              placeholder="e.g. Full-time / Remote"
               className={inputClass}
-            />
+            >
+              <option value="Full-Time">Full-Time</option>
+              <option value="Part-Time">Part-Time</option>
+              <option value="Contract">Contract</option>
+              <option value="Remote">Remote</option>
+            </select>
           </div>
 
           <div>
-            <label className={labelClass}>Required Skills</label>
-            <div className="flex min-h-[42px] flex-wrap items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 focus-within:border-[#8A38F5] sm:min-h-[46px]">
+            <label className={labelClass}>Required Skills * (Press Enter)</label>
+            <div className="flex min-h-[46px] flex-wrap items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 focus-within:border-[#8A38F5]">
               {skills.map((skill) => (
                 <span
                   key={skill}
@@ -234,7 +283,6 @@ function PostJobContent() {
                     type="button"
                     onClick={() => handleRemoveSkill(skill)}
                     className="text-[#8A38F5] hover:text-[#6C3CFF]"
-                    aria-label={`Remove ${skill}`}
                   >
                     <X size={12} />
                   </button>
@@ -245,8 +293,8 @@ function PostJobContent() {
                 value={skillDraft}
                 onChange={(e) => setSkillDraft(e.target.value)}
                 onKeyDown={handleAddSkill}
-                placeholder="+ Add skill"
-                className="min-w-[80px] flex-1 bg-transparent text-xs text-gray-500 outline-none placeholder:text-gray-400 sm:text-sm"
+                placeholder={skills.length === 0 ? "Type skill & press Enter" : "+ Add skill"}
+                className="min-w-[100px] flex-1 bg-transparent text-xs text-gray-500 outline-none placeholder:text-gray-400 sm:text-sm"
               />
             </div>
           </div>
@@ -263,18 +311,18 @@ function PostJobContent() {
               </Link>
               <button
                 type="button"
-                onClick={() => handleSubmit()}
+                onClick={() => handleSubmit("PUBLISHED")}
                 disabled={saving}
                 className="rounded-xl bg-[#8A38F5] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#7226e0] disabled:opacity-50"
               >
-                {saving ? "Saving…" : "Save changes"}
+                {saving ? "Saving…" : "Save Changes"}
               </button>
             </>
           ) : (
             <>
               <button
                 type="button"
-                onClick={() => handleSubmit("draft")}
+                onClick={() => handleSubmit("DRAFT")}
                 disabled={saving}
                 className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 disabled:opacity-50"
               >
@@ -282,7 +330,7 @@ function PostJobContent() {
               </button>
               <button
                 type="button"
-                onClick={() => handleSubmit("active")}
+                onClick={() => handleSubmit("PUBLISHED")}
                 disabled={saving}
                 className="rounded-xl bg-[#8A38F5] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#7226e0] disabled:opacity-50"
               >

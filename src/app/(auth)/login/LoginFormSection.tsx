@@ -70,12 +70,17 @@ async function handleLogin(e: FormEvent) {
 
   if (!result.ok) {
     setError({ submit: result.message });
-    if (result.message.toLowerCase().includes("verify")) {
+    if (result.message?.toLowerCase().includes("verify")) {
       setResendVisible(true);
     }
     return;
   }
 
+  // 👇 ADDED THIS LINE: Save the token so API calls can use it! 👇
+  localStorage.setItem("access_token", result.accessToken);
+
+  // (Optional) If profileApi is still using mock data, you can leave this here
+  // but eventually you will want to fetch this from the real backend too!
   const existingProfile = profileApi.get(result.user.email);
 
   session.set({
@@ -83,10 +88,11 @@ async function handleLogin(e: FormEvent) {
     role: result.user.role,
     redirectPath: result.redirectPath,
     avatarUrl: existingProfile?.personalInfo?.avatarUrl,
-    accessToken: result.accessToken,
+    accessToken: result.accessToken, // It's good you have it here too, but localstorage is what fetch needs
   });
 
   router.push(result.redirectPath);
+
 }
   function handleResend() {
     // TODO: call api.auth.resendVerificationEmail(formData.email) once the endpoint exists.

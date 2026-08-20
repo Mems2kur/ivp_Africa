@@ -3,13 +3,12 @@
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, Mail, Lock, Building2, Eye, EyeOff } from "lucide-react";
-import { api } from "@/lib/api/client";
+import Image from "next/image";
+import { User, Mail, Lock, Building2, Eye, EyeOff, Briefcase, Hash, Users } from "lucide-react";
+import { api, realAuthApi } from "@/lib/api/client";
 import { RoleToggle } from "./RoleToggle";
 import { session } from "@/lib/auth/session";
 import { profileApi } from "@/lib/api/profile";
-import Image from "next/image";
-import { realAuthApi } from "@/lib/api/client";
 
 interface CandidateFormData {
   firstName: string;
@@ -22,9 +21,13 @@ interface CandidateFormData {
 
 interface EmployerFormData {
   companyName: string;
+  contactPerson: string;
   businessEmail: string;
   password: string;
   confirmPassword: string;
+  industry: string;
+  companySize: string;
+  rcNumber: string;
   agreeToTerms: boolean;
 }
 
@@ -32,6 +35,7 @@ interface FormErrors {
   firstName?: string;
   lastName?: string;
   companyName?: string;
+  contactPerson?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -53,9 +57,13 @@ const initialCandidateData: CandidateFormData = {
 
 const initialEmployerData: EmployerFormData = {
   companyName: "",
+  contactPerson: "",
   businessEmail: "",
   password: "",
   confirmPassword: "",
+  industry: "",
+  companySize: "",
+  rcNumber: "",
   agreeToTerms: false,
 };
 
@@ -109,6 +117,7 @@ export default function SignUpFormSection() {
   function validateEmployer(): FormErrors {
     const errors: FormErrors = {};
     if (employerData.companyName.trim().length < 2) errors.companyName = "Enter your company name.";
+    if (employerData.contactPerson.trim().length < 2) errors.contactPerson = "Enter contact person name.";
     if (!employerData.businessEmail.trim()) {
       errors.email = "Business email is required.";
     } else if (!EMAIL_RULE.test(employerData.businessEmail)) {
@@ -138,13 +147,13 @@ export default function SignUpFormSection() {
       password: candidateData.password,
       confirmPassword: candidateData.confirmPassword,
     });
-   console.log("Candidate registration result:", result);
+    console.log("Candidate registration result:", result);
     setLoading(false);
 
     if (!result.ok) {
-  setError({ submit: result.message });
-  return;
-}
+      setError({ submit: result.message });
+      return;
+    }
 
     setPendingEmail(candidateData.email.trim());
     setPendingRedirect("/talent");
@@ -158,15 +167,20 @@ export default function SignUpFormSection() {
     if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
-    const result = await api.auth.registerEmployer({
+    const result = await realAuthApi.registerEmployer({
       companyName: employerData.companyName.trim(),
-      businessEmail: employerData.businessEmail.trim(),
+      contactPerson: employerData.contactPerson.trim(),
+      email: employerData.businessEmail.trim(),
       password: employerData.password,
+      confirmPassword: employerData.confirmPassword,
+      industry: employerData.industry.trim() || undefined,
+      companySize: employerData.companySize.trim() || undefined,
+      rcNumber: employerData.rcNumber.trim() || undefined,
     });
     setLoading(false);
 
     if (!result.ok) {
-      setError({ submit: "An account already exists with this email address." });
+      setError({ submit: result.message });
       return;
     }
 
@@ -200,12 +214,12 @@ export default function SignUpFormSection() {
         : employerData.companyName.trim();
 
     session.set({
-  email: pendingEmail,
-  role,
-  displayName,
-  redirectPath: result.redirectPath || pendingRedirect, 
-  avatarUrl: existingProfile?.personalInfo?.avatarUrl,
-});
+      email: pendingEmail,
+      role,
+      displayName,
+      redirectPath: result.redirectPath || pendingRedirect,
+      avatarUrl: existingProfile?.personalInfo?.avatarUrl,
+    });
 
     router.push(result.redirectPath || pendingRedirect);
   }
@@ -225,7 +239,7 @@ export default function SignUpFormSection() {
         <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-xl sm:max-w-md sm:rounded-3xl sm:p-8 md:p-9 lg:p-10">
           <h1 className="text-lg font-bold text-[#3A2680] sm:text-xl md:text-2xl">Verify your email</h1>
           <p className="mt-2 text-xs text-[#6b5a94] sm:text-sm">
-            We sent a 6-digit code to{" "}
+            We sent a verification code to{" "}
             <span className="font-medium text-[#3A2680] break-all">{pendingEmail}</span>
           </p>
 
@@ -290,7 +304,7 @@ export default function SignUpFormSection() {
     <div className="flex w-full flex-col h-screen items-center justify-center bg-[#EDE7F8] px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:ml-[45%] md:min-h-screen lg:py-12 xl:ml-1/2">
       
       {/* Mobile-only heading, hidden once the desktop branding panel takes over */}
-      <div className="flex flex-col items-center gap-2 bg-[#EDE7F8]  pb-2 mb-3 lg:hidden">
+      <div className="flex flex-col items-center gap-2 bg-[#EDE7F8] pb-2 mb-3 lg:hidden">
         <Image
           src="/img_ivp/Ivp_logo.png"
           alt="IVP Africa"
@@ -341,6 +355,20 @@ export default function SignUpFormSection() {
 
             <div>
               <div className="relative">
+                <User className={iconClass} />
+                <input
+                  type="text"
+                  placeholder="Contact person (Full name)"
+                  value={employerData.contactPerson}
+                  onChange={(e) => setEmployerData({ ...employerData, contactPerson: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              {error.contactPerson && <p className="mt-1.5 text-xs text-red-500">{error.contactPerson}</p>}
+            </div>
+
+            <div>
+              <div className="relative">
                 <Mail className={iconClass} />
                 <input
                   type="email"
@@ -351,6 +379,52 @@ export default function SignUpFormSection() {
                 />
               </div>
               {error.email && <p className="mt-1.5 text-xs text-red-500">{error.email}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <div className="relative">
+                  <Briefcase className={iconClass} />
+                  <input
+                    type="text"
+                    placeholder="Industry (e.g. Fintech)"
+                    value={employerData.industry}
+                    onChange={(e) => setEmployerData({ ...employerData, industry: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="relative">
+                  <Users className={iconClass} />
+                  <select
+                    value={employerData.companySize}
+                    onChange={(e) => setEmployerData({ ...employerData, companySize: e.target.value })}
+                    className={`${inputClass} appearance-none cursor-pointer`}
+                  >
+                    <option value="" disabled>Company size</option>
+                    <option value="1-10">1-10 employees</option>
+                    <option value="11-50">11-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-500">201-500 employees</option>
+                    <option value="500+">500+ employees</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="relative">
+                <Hash className={iconClass} />
+                <input
+                  type="text"
+                  placeholder="RC / Registration Number (e.g. RC1234567)"
+                  value={employerData.rcNumber}
+                  onChange={(e) => setEmployerData({ ...employerData, rcNumber: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
             </div>
 
             <div>

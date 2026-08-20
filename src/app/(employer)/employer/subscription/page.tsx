@@ -17,24 +17,45 @@ export default function SubscriptionPage() {
   const [activeJobCount, setActiveJobCount] = useState(0);
   const [showPlanList, setShowPlanList] = useState(false);
 
-  function refresh() {
+  async function refresh() {
     if (!session?.email) return;
-    setState(subscriptionApi.get(session.email));
-    const jobs = employerJobsApi.getAll(session.email);
-    setActiveJobCount(jobs.filter((j) => j.status === "active").length);
+
+    try {
+      // 1. Await the subscription fetch
+      const subRes = await subscriptionApi.get(session.email);
+      // Safely set state depending on your API's response structure
+      setState(subRes.data ? subRes.data : subRes);
+
+      // 2. Await the jobs fetch
+      const jobsRes = await employerJobsApi.getAll(session.email);
+      
+      // 3. Safely extract the array and filter
+      const jobsArray = Array.isArray(jobsRes.data) 
+        ? jobsRes.data 
+        : (Array.isArray(jobsRes) ? jobsRes : []);
+        
+      setActiveJobCount(jobsArray.filter((j) => j.status === "active").length);
+    } catch (error) {
+      console.error("Failed to refresh subscription data:", error);
+    }
   }
 
   useEffect(() => {
     refresh();
   }, [session?.email]);
 
-  function handleSelectPlan(planId: string) {
+  async function handleSelectPlan(planId: string) {
     if (!session?.email || planId === state?.planId) {
       setShowPlanList(false);
       return;
     }
-    subscriptionApi.changePlan(session.email, planId);
-    refresh();
+    
+    // 1. Await the plan change so it finishes saving first
+    await subscriptionApi.changePlan(session.email, planId);
+    
+    // 2. Await the refresh so the UI updates with the new data
+    await refresh(); 
+    
     setShowPlanList(false);
   }
 
