@@ -19,6 +19,10 @@ import { getRecommendedJobs } from "@/lib/utils/recommendations";
 import { getLatestUpdates, type UpdateItem } from "@/lib/utils/dashboardUpdates";
 import type { ApplicationRecord } from "@/lib/types/application";
 import type { Job } from "@/app/(talent)/talent/jobs/job";
+ 
+import { profileCompletionApi } from "@/lib/api/profileCompletion";
+
+
 
 const statusStyles: Record<ApplicationRecord["status"], string> = {
   shortlisted: "bg-[#EDE7F8] text-[#8A38F5]",
@@ -43,9 +47,10 @@ function TalentDashboard() {
   const [savedCount, setSavedCount] = useState(0);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
   const [updates, setUpdates] = useState<UpdateItem[]>([]);
-  const isProfileComplete = completionPercentage >= 100;
+
   useEffect(() => {
     if (!session?.email) return;
 
@@ -53,9 +58,12 @@ function TalentDashboard() {
     setSavedCount(savedJobsApi.getAll(session.email).length);
 
     const profile = profileApi.get(session.email);
-    const { checklist: items, percentage } = getProfileCompletion(profile);
+    const { checklist: items } = getProfileCompletion(profile);
     setChecklist(items);
-    setCompletionPercentage(percentage);
+
+    const completion = profileCompletionApi.get(session.email);
+    setCompletionPercentage(completion.profilePercent);
+    setIsProfileComplete(completion.isComplete);
 
     setRecommendedJobs(getRecommendedJobs(profile));
     setUpdates(getLatestUpdates(session.email));
@@ -85,9 +93,9 @@ function TalentDashboard() {
           </div>
           <div className="min-w-0">
             <p className="text-lg font-bold sm:text-xl">{completionPercentage}%</p>
-            <p className="truncate text-xs text-white/80 sm:text-sm">
-              {completionPercentage < 100 ? "Complete your profile to apply" : "Profile complete"}
-            </p>
+            <p className="text-xs text-white/80 sm:text-sm">
+          {isProfileComplete ? "Profile complete" : "Complete your profile to apply"}
+        </p>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import type { CandidateProfileData } from "@/lib/types/Profile";
+import { profileCompletionApi } from "@/lib/api/profileCompletion";
 
 export interface ChecklistItem {
   id: string;
