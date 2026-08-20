@@ -37,41 +37,52 @@ const statusStyles: Record<ApplicationRecord["status"], string> = {
 };
 
 
- useEffect(() => {
+useEffect(() => {
   const allUsers = adminUsersApi.getAll();
-    const candidates = allUsers.filter((u) => u.role === "talent");
-    const employers = allUsers.filter((u) => u.role === "employer");
 
-    setCandidateCount(candidates.length);
-    let jobs = 0;
-    employers.forEach((emp) => {
-      jobs += employerJobsApi.getAll(emp.email).filter((j) => j.status === "active").length;
-    });
-    setActiveJobCount(jobs);
+  const candidates = allUsers.filter((u) => u.role === "talent");
 
-    let applications = 0;
-    candidates.forEach((c) => {
-      applications += applicationsApi.getAll(c.email).length;
-    });
-    setTotalApplications(applications);
+  setCandidateCount(candidates.length);
 
-    const allApplications: ApplicationRecord[] = [];
-candidates.forEach((c) => {
-  allApplications.push(...applicationsApi.getAll(c.email));
-});
-allApplications.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
-setRecentApplications(allApplications.slice(0, 4));
+  // Admin job count is not available from /my-jobs.
+  // That endpoint only returns jobs belonging to the logged-in employer.
+  setActiveJobCount(0);
 
-setLatestUpdates(auditLogsApi.getAll().slice(0, 3));
+  let applications = 0;
 
-    setRecentUsers(
-      [...allUsers]
-        .filter((u) => u.createdAt)
-        .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
-        .slice(0, 5)
-    );
+  candidates.forEach((c) => {
+    applications += applicationsApi.getAll(c.email).length;
+  });
 
- },[]);
+  setTotalApplications(applications);
+
+  const allApplications: ApplicationRecord[] = [];
+
+  candidates.forEach((c) => {
+    allApplications.push(...applicationsApi.getAll(c.email));
+  });
+
+  allApplications.sort(
+    (a, b) =>
+      new Date(b.appliedAt).getTime() -
+      new Date(a.appliedAt).getTime()
+  );
+
+  setRecentApplications(allApplications.slice(0, 4));
+
+  setLatestUpdates(auditLogsApi.getAll().slice(0, 3));
+
+  setRecentUsers(
+    [...allUsers]
+      .filter((u) => u.createdAt)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt!).getTime() -
+          new Date(a.createdAt!).getTime()
+      )
+      .slice(0, 5)
+  );
+}, []);
 function dotColorFor(action: string) {
   if (action.toLowerCase().includes("suspend")) return "bg-red-500";
   if (action.toLowerCase().includes("approv") || action.toLowerCase().includes("reactivat")) return "bg-green-500";
