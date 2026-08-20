@@ -5,7 +5,7 @@ import { useSearchParams,  useRouter} from "next/navigation";
 import { realAuthApi } from "@/lib/api/client";
 import Link from "next/link";
 
-export function VerifyEmailPage() {
+export default function VerifyEmailPage() {
   const searchParams= useSearchParams();
   const router = useRouter();
   
