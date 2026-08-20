@@ -69,7 +69,7 @@ export default function ReportsPage() {
 
     const employers = allUsers.filter((u) => u.role === "employer");
     const jobs: EmployerJob[] = [];
-    employers.forEach((emp) => jobs.push(...employerJobsApi.getAll(emp.email)));
+    // employers.forEach((emp) => jobs.push(...employerJobsApi.getAll(emp.email)));
     setAllJobs(jobs);
 
     setChecked(true);
